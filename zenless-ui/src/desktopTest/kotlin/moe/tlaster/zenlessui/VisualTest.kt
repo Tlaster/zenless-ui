@@ -54,8 +54,9 @@ class VisualTest {
             val button=onNodeWithTag("button").fetchSemanticsNode().boundsInRoot
             val label=onNodeWithTag("label",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
             val diameter=button.height*58.5f/58f
-            val shift=diameter/4*(if(direction==LayoutDirection.Ltr)1 else -1)
-            assertTrue(kotlin.math.abs(label.center.x-button.center.x-shift)<=1,"Center between the circle's vertical diameter and the trailing edge")
+            val leadingCenter=if(direction==LayoutDirection.Ltr)button.left+diameter/2 else button.right-diameter/2
+            val trailingCenter=if(direction==LayoutDirection.Ltr)button.right-button.height/2 else button.left+button.height/2
+            assertTrue(kotlin.math.abs(label.center.x-(leadingCenter+trailingCenter)/2)<=1,"Center between the leading circle and trailing semicircle centers")
             assertTrue(if(direction==LayoutDirection.Ltr)label.left>=button.left+diameter-1 else label.right<=button.right-diameter+1,"Text stays outside the icon circle even at natural width")
         }
     }
@@ -130,7 +131,9 @@ class VisualTest {
         val disabled=onNodeWithTag("disabled-leading");val enabled=onNodeWithTag("enabled-leading")
         val label=onNodeWithText("继续操作",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
         val button=enabled.fetchSemanticsNode().boundsInRoot
-        assertTrue(kotlin.math.abs(label.center.x-button.center.x-button.height*58.5f/58f/4)<=1,"The label centers from the circular slot's vertical diameter")
+        val leadingCenter=button.left+button.height*58.5f/58f/2
+        val trailingCenter=button.right-button.height/2
+        assertTrue(kotlin.math.abs(label.center.x-(leadingCenter+trailingCenter)/2)<=1,"The label centers between the two circular centers")
         val off=disabled.captureToImage().toPixelMap();val on=enabled.captureToImage().toPixelMap()
         assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
         assertEquals(Color(0xff3d3d3d),on[300,2],"The upper bevel keeps the reference brightness")
