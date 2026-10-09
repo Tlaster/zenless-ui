@@ -25,7 +25,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -118,7 +117,7 @@ public fun ZenlessSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, m
         }, verticalAlignment = Alignment.CenterVertically) {
         if (label.isNotEmpty()) CompositionLocalProvider(
             LocalInk provides if (enabled) Color.White else Palette.muted,
-            LocalTextStyle provides LocalTextStyle.current.copy(fontSize = size.fontSize.sp, fontWeight = FontWeight.Bold),
+            LocalTextStyle provides LocalTextStyle.current.copy(fontSize = size.fontSize.sp),
         ) { ZenlessText(label, Modifier.weight(1f, fill = false).padding(start = (23*controlScale).dp, end = (17*controlScale).dp)) }
         Canvas(Modifier.size((142*controlScale).dp, size.height.dp)) {
             scale(density*controlScale, density*controlScale, pivot = Offset.Zero) {
