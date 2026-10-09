@@ -68,20 +68,24 @@ fun Example() {
 
 Use one `ZenlessOverlayHost` around the application, including selects and tooltips. Alert and drawer callbacks run after their exit animation. Alerts do not dismiss on outside taps. Drawer outside taps dismiss. Tooltip hover delay is 600 ms; touch uses the platform long-press threshold, and moving its anchor or tapping outside dismisses it. Tooltips accept text only.
 
+Controls share three size presets: `Compact` (40 dp / 14 sp), `Default` (52 dp / 20 sp), and `Comfortable` (62 dp / 24 sp). Set `ZenlessTheme(size = ZenlessSize.Compact) { ... }` for a whole group, or pass `size` to one control. Heights are minimums and grow with wrapped or enlarged text. Buttons, fields, selects, switches, checkboxes, radios, sliders, ordinary tabs/navigation, information rows and collapse headers use the same presets. Icon slots and padding follow the preset; switch tracks scale proportionally. Back/close controls, folder tabs and Alert actions retain their calibrated geometry. Alert actions use Default typography at a minimum height of 56 dp.
+
+This replaces the earlier five button-only sizes before the first Central release. Migrate `Mini` / `Small` to `Compact`, and `Large` / `Extra` to `Default`. Existing `Default` now means 52 dp / 20 sp; use `Compact` for the previous 40 dp / 14 sp scale. Gallery's **Control size** selector updates the previews and their copyable code; Foundations includes all three sizes together.
+
 Non-folder `ZenlessTabs` use circular outer ends and slanted interior edges. Selection slides and morphs over 280 ms with a smooth ease-out, keeping its breathing phase through rapid selection changes. Text turns black where the slider covers it. Set `expand = false` for color-only breathing without the scale pulse; selection still moves and morphs. The Gallery's Navigation page exposes this as **Scale pulse**. Folder tabs ignore `expand`.
 
-Buttons use black text and standalone icons while held. A leading icon in a black disc instead follows the plate's yellow-green breathing color, as do Alert action badges. Pass business artwork through `leadingIcon` and read `zenlessContentColor` inside the slot; this is a read-only state color, not a palette override. Regular content slots also expose this color for caller-drawn icons. For example (with Compose `Canvas`, `Modifier`, `size` and `dp` imports):
+Buttons use black text and standalone icons while held. A leading icon in a black disc instead follows the plate's yellow-green breathing color, as do Alert action badges. Pass business artwork through `leadingIcon` and read `zenlessContentColor` inside the slot; this is a read-only state color, not a palette override. Regular content slots also expose this color for caller-drawn icons. Use `fillMaxSize()` inside the bounded icon slot to follow the control size. For example (with Compose `Canvas`, `Modifier`, `fillMaxSize`, `padding` and `dp` imports):
 
 ```kotlin
 ZenlessButton(onClick = { /* navigate */ }, leadingIcon = {
     val ink = zenlessContentColor
-    Canvas(Modifier.size(12.dp)) { drawCircle(ink) }
+    Canvas(Modifier.fillMaxSize().padding(5.dp)) { drawCircle(ink) }
 }) {
     ZenlessText("Navigate")
 }
 ```
 
-All general button variants and standalone icon buttons share the gray shell and state text colors: white when enabled, `#565657` when disabled, and black while held. Filled buttons with a leading icon keep a dark plate; `tone` selects the fixed color of the left badge. The disabled badge retains a dim version of its color while the shell and checker texture remain unchanged. Leading badges stay at the left edge, with bold platform-default text (without forced italics) centered in the whole button. Alert actions reuse this same `ZenlessButton` with `leadingIcon`.
+All general button variants and standalone icon buttons share the gray shell and state text colors: white when enabled, `#565657` when disabled, and black while held. Filled buttons with a leading icon keep a dark plate; `tone` selects the fixed color of the leading badge. The disabled badge retains a dim version of its color while the shell and checker texture remain unchanged. Buttons use normal-weight platform-default text without forced italics. Labels with an icon are centered between the leading circle's far edge and the trailing semicircle's center, mirrored in RTL; labels without an icon are centered in the whole button. Alert actions reuse this same `ZenlessButton` with `leadingIcon`.
 
 ## Build
 

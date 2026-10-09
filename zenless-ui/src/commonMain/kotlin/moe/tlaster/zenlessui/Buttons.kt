@@ -65,7 +65,7 @@ public fun ZenlessButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tone: ZenlessTone = ZenlessTone.Neutral,
-    size: ZenlessSize = ZenlessSize.Default,
+    size: ZenlessSize = LocalControlSize.current,
     variant: ZenlessButtonVariant = ZenlessButtonVariant.Filled,
     enabled: Boolean = true,
     loading: Boolean = false,
@@ -89,9 +89,9 @@ public fun ZenlessButton(
     val edge = Color(0xff262626)
     val baseInk = if(enabled)Color.White else Color(0xff565657)
     val ink = mix(baseInk, Color.Black, feedback.highlight)
-    val height = when (size) { ZenlessSize.Mini -> 30; ZenlessSize.Small -> 34; ZenlessSize.Default -> 40; ZenlessSize.Large -> 46; ZenlessSize.Extra -> 52 }
-    val padding = when (size) { ZenlessSize.Mini -> 17; ZenlessSize.Small -> 23; ZenlessSize.Default -> 29; ZenlessSize.Large -> 47; ZenlessSize.Extra -> 59 }
-    val font = when (size) { ZenlessSize.Mini, ZenlessSize.Small -> 12; ZenlessSize.Default -> 14; ZenlessSize.Large -> 16; ZenlessSize.Extra -> 18 }
+    val height = size.height
+    val padding = size.horizontalPadding * 1.7f
+    val font = size.fontSize
     Box(modifier.heightIn(min = height.dp).semantics { this.selected = selected; if (loading) progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }
         .plate(feedback, fill, edge, round, enabled = enabled && !loading,button=true,leading=leadingIcon!=null && !loading).drawWithCache { onDrawBehind {
             if(selected && enabled && !loading && !feedback.active)drawPath(roundedPath(Rect(Offset.Zero,this.size).deflate(2.5.dp.toPx()),(if(round)this.size.minDimension/2 else 6.dp.toPx())-2.5.dp.toPx()),mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),style=Stroke(3.dp.toPx()))
@@ -102,7 +102,7 @@ public fun ZenlessButton(
             Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.layout { measurable, constraints ->
                 val contentStart = if(leadingIcon!=null)(constraints.minHeight * 58.5f / 58f).roundToInt() else 0
                 val contentEnd = if(leadingIcon!=null)constraints.minHeight/2 else 0
-                val sidePadding = if(leadingIcon!=null)12.dp.roundToPx() else padding.dp.roundToPx()
+                val sidePadding = if(leadingIcon!=null)(height*12f/52f).dp.roundToPx() else padding.dp.roundToPx()
                 val body = measurable.measure(constraints.offset(horizontal = -contentStart - contentEnd - 2*sidePadding))
                 layout(body.width + contentStart + contentEnd + 2*sidePadding, body.height) { body.placeRelative(contentStart + sidePadding, 0) }
             }, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
@@ -113,7 +113,9 @@ public fun ZenlessButton(
                         drawCircle(mix(if(enabled)badge else mix(Color.Black,badge,.353f),Color.Black,feedback.highlight),radius=this.size.minDimension*.28f)
                     }
                 },contentAlignment=Alignment.Center) {
-                    CompositionLocalProvider(LocalInk provides mix(Color.Black,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)) { leadingIcon() }
+                    CompositionLocalProvider(LocalInk provides mix(Color.Black,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)) {
+                        Box(Modifier.size(size.iconSize.dp),contentAlignment=Alignment.Center) { leadingIcon() }
+                    }
                 }
             }
             if (loading) ZenlessSpinner(Modifier.matchParentSize())
@@ -122,12 +124,14 @@ public fun ZenlessButton(
 }
 
 @Composable
-public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable () -> Unit) {
+public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true, size: ZenlessSize = LocalControlSize.current, content: @Composable () -> Unit) {
     val source = remember { MutableInteractionSource() }
     val feedback = rememberFeedback(source, false, enabled, buttonFeedback = true)
-    Box(modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp).semantics { this.contentDescription = contentDescription }
-        .plate(feedback,edge=Color(0xff262626),enabled=enabled,button=true).pointerClick(enabled, source, onClick = onClick).padding(9.dp), contentAlignment = Alignment.Center) {
-        CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff565657),Color.Black,feedback.highlight),LocalButtonContent provides true) { content() }
+    Box(modifier.sizeIn(minWidth = size.height.dp, minHeight = size.height.dp).semantics { this.contentDescription = contentDescription }
+        .plate(feedback,edge=Color(0xff262626),enabled=enabled,button=true).pointerClick(enabled, source, onClick = onClick), contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff565657),Color.Black,feedback.highlight),LocalButtonContent provides true,LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) {
+            Box(Modifier.size(size.iconSize.dp),contentAlignment=Alignment.Center) { content() }
+        }
     }
 }
 

@@ -23,6 +23,10 @@ import kotlinx.coroutines.launch
 internal expect fun defaultChinese(): Boolean
 internal expect fun textClipEntry(text: String): ClipEntry
 @Composable internal expect fun GalleryBackHandler(enabled: Boolean, onBack: () -> Unit)
+private val LocalExampleSize = compositionLocalOf { ZenlessSize.Default }
+
+internal fun sizedExample(code: String, size: ZenlessSize): String =
+    "ZenlessTheme(size = ZenlessSize.${size.name}) {\n${code.prependIndent("    ")}\n}"
 
 internal enum class Demo(val en: String, val zh: String) {
     Foundations("Foundations", "视觉基础"), Buttons("Buttons", "按钮"), Navigation("Navigation", "导航与页签"),
@@ -42,13 +46,15 @@ public fun GalleryApp() {
     var lastEvent by remember { mutableStateOf("") }
     var alertMessage by remember { mutableStateOf<String?>(null) }
     var allowCancel by remember { mutableStateOf(true) }
+    var size by remember { mutableStateOf(ZenlessSize.Default) }
     val message = alertMessage ?: if (chinese) "应用这些修改？\n当前设置将被替换。" else "Apply these changes?\nYour existing settings will be replaced."
     val contentScroll = rememberScrollState()
     LaunchedEffect(page) { contentScroll.scrollTo(0) }
     val tr: (String, String) -> String = { en, zh -> if (chinese) zh else en }
     val record: (String) -> Unit = { events++; lastEvent = it }
     GalleryBackHandler(detail && !alert && !drawer) { detail = false }
-    ZenlessTheme {
+    CompositionLocalProvider(LocalExampleSize provides size) {
+    ZenlessTheme(size = size) {
         ZenlessOverlayHost(Modifier.fillMaxSize()) {
             ZenlessSurface(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
@@ -57,7 +63,7 @@ public fun GalleryApp() {
                             ZenlessText("ZENLESS UI", style = ZenlessTextStyle.Subtitle)
                             ZenlessText(tr("COMPONENT GALLERY / 0.1.0", "组件展台 / 0.1.0"), style = ZenlessTextStyle.Caption)
                         }
-                        ZenlessButton({ chinese = !chinese }, size = ZenlessSize.Small) { ZenlessText(if (chinese) "English" else "中文") }
+                        ZenlessButton({ chinese = !chinese }, size = ZenlessSize.Compact) { ZenlessText(if (chinese) "English" else "中文") }
                     }
                     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                         val wide = maxWidth >= 900.dp
@@ -66,7 +72,7 @@ public fun GalleryApp() {
                                 ZenlessText(tr("EXPLORE COMPONENTS", "浏览组件"), style = ZenlessTextStyle.Caption)
                                 ZenlessNavigation(Demo.entries.map { if (chinese) it.zh else it.en }, page.ordinal, {
                                     page = Demo.entries[it]; detail = true
-                                }, Modifier.fillMaxWidth())
+                                }, Modifier.fillMaxWidth(), size=ZenlessSize.Compact)
                                 if (!wide) ZenlessButton({ detail = true }, Modifier.fillMaxWidth(), tone = ZenlessTone.Accent) { ZenlessText(tr("Open selected", "打开当前分类")) }
                                 ZenlessText(tr("Fixed palette. Full motion.\nNo icons, fonts or audio bundled.", "固定配色，完整动效。\n不附带图标集、字体或音效。"), style = ZenlessTextStyle.Caption)
                             }
@@ -74,6 +80,7 @@ public fun GalleryApp() {
                                 if (!wide) ZenlessBackButton({ detail = false }, tr("Back to categories", "返回分类"))
                                 ZenlessText(if (chinese) page.zh else page.en, style = ZenlessTextStyle.Title)
                                 ZenlessText(tr("Interact with the preview. Adjust parameters. Copy the Kotlin example.", "操作预览，调整参数，复制 Kotlin 示例。"), style = ZenlessTextStyle.Caption)
+                                ZenlessSelect(listOf(tr("Compact · 40 dp / 14 sp", "紧凑 · 40 dp / 14 sp"), tr("Default · 52 dp / 20 sp", "常规 · 52 dp / 20 sp"), tr("Comfortable · 62 dp / 24 sp", "宽松 · 62 dp / 24 sp")), size.ordinal, { size=ZenlessSize.entries[it] }, label=tr("Control size", "控件尺寸"))
                                 key(page) {
                                     when (page) {
                                         Demo.Foundations -> Foundations(tr)
@@ -113,13 +120,15 @@ public fun GalleryApp() {
             }
         }
     }
+    }
 }
 
 @Composable private fun Preview(title: String, content: @Composable ColumnScope.() -> Unit) {
     ZenlessCard(Modifier.fillMaxWidth()) { ZenlessText(title, style = ZenlessTextStyle.Subtitle); Spacer(Modifier.height(8.dp)); content() }
 }
 
-@Composable private fun CodeExample(code: String, tr: (String, String) -> String) {
+@Composable private fun CodeExample(example: String, tr: (String, String) -> String) {
+    val code = sizedExample(example, LocalExampleSize.current)
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var copied by remember(code) { mutableStateOf(false) }
@@ -136,7 +145,7 @@ public fun GalleryApp() {
                     catch (_: Exception) { copyFailed = true }
                     finally { copying = false }
                 }
-            }, size = ZenlessSize.Small, loading = copying) { ZenlessText(if (copied) tr("Copied", "已复制") else tr("Copy", "复制")) }
+            }, size = ZenlessSize.Compact, loading = copying) { ZenlessText(if (copied) tr("Copied", "已复制") else tr("Copy", "复制")) }
         }
         if (copyFailed) ZenlessNotice(tr("Copy failed. Select the example text to copy it manually.", "复制失败，请选中示例文字后手动复制。"), tone = ZenlessTone.Warning)
         SelectionContainer { ZenlessText(code, Modifier.fillMaxWidth().background(Color.Black).padding(16.dp)) }
@@ -144,6 +153,17 @@ public fun GalleryApp() {
 }
 
 @Composable private fun Foundations(tr: (String, String) -> String) {
+    Preview(tr("Control size comparison", "控件尺寸对照")) {
+        for (size in ZenlessSize.entries) ZenlessTheme(size=size) {
+            ZenlessText(size.name)
+            FlowRow(horizontalArrangement=Arrangement.spacedBy(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                ZenlessButton({}) { ZenlessText(tr("Action", "操作")) }
+                ZenlessButton({},leadingIcon={CallerIcon()}) { ZenlessText(tr("Action", "操作")) }
+                ZenlessSwitch(true,{})
+                ZenlessCheckbox(ToggleableState.On,{},label=tr("Option", "选项"))
+            }
+        }
+    }
     Preview(tr("Fixed semantic tones", "固定语义配色")) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { ZenlessTone.entries.forEach { ZenlessBadge(it.name, tone = it) } }
     }
@@ -154,7 +174,7 @@ public fun GalleryApp() {
         ZenlessText(tr("Caption / supporting information", "注释 / 辅助信息"), style = ZenlessTextStyle.Caption)
         ZenlessMetric("026", unit = "%", change = "+12")
     }
-    CodeExample("ZenlessTheme {\n    ZenlessOverlayHost {\n        ZenlessSurface(Modifier.fillMaxSize()) {\n            ZenlessText(${quote(tr("Hello", "你好"))})\n        }\n    }\n}", tr)
+    CodeExample("ZenlessOverlayHost {\n    ZenlessSurface(Modifier.fillMaxSize()) {\n        ZenlessText(${quote(tr("Hello", "你好"))})\n    }\n}", tr)
 }
 
 internal fun quote(value: String): String = buildString {
@@ -162,22 +182,23 @@ internal fun quote(value: String): String = buildString {
 }
 internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, variant: ZenlessButtonVariant, enabled: Boolean, loading: Boolean, selected: Boolean, round: Boolean, leadingIcon: Boolean = false) =
     "ZenlessButton(\n    onClick = { /* handle action */ },\n    tone = ZenlessTone.${tone.name},\n    size = ZenlessSize.${size.name},\n    variant = ZenlessButtonVariant.${variant.name},\n    enabled = $enabled, loading = $loading,\n    selected = $selected, round = $round,\n" +
-        (if(leadingIcon)"    leadingIcon = {\n        val ink = zenlessContentColor\n        Canvas(Modifier.size(12.dp)) { drawCircle(ink) }\n    },\n" else "") +
+        (if(leadingIcon)"    leadingIcon = {\n        val ink = zenlessContentColor\n        Canvas(Modifier.fillMaxSize().padding(5.dp)) { drawCircle(ink) }\n    },\n" else "") +
         ") {\n    ZenlessText(${quote(text)})\n}"
 
 @Composable private fun CallerIcon() {
     val ink=zenlessContentColor
-    Canvas(Modifier.size(12.dp)) { drawCircle(ink) }
+    Canvas(Modifier.fillMaxSize().padding(5.dp)) { drawCircle(ink) }
 }
 
 @Composable private fun ButtonsDemo(tr: (String, String) -> String, record: (String) -> Unit) {
     var text by remember { mutableStateOf(tr("Continue", "继续")) }
-    var tone by remember { mutableIntStateOf(1) }; var size by remember { mutableIntStateOf(2) }; var variant by remember { mutableIntStateOf(0) }
+    var tone by remember { mutableIntStateOf(1) }; var variant by remember { mutableIntStateOf(0) }
+    val size = LocalExampleSize.current
     var enabled by remember { mutableStateOf(true) }; var loading by remember { mutableStateOf(false) }; var selected by remember { mutableStateOf(false) }; var round by remember { mutableStateOf(true) }
     var leadingIcon by remember { mutableStateOf(true) }
     Preview(tr("Live preview", "实时预览")) {
         Box(Modifier.fillMaxWidth().heightIn(min = 120.dp), contentAlignment = Alignment.Center) {
-            ZenlessButton({ record(text) }, tone = ZenlessTone.entries[tone], size = ZenlessSize.entries[size], variant = ZenlessButtonVariant.entries[variant], enabled = enabled, loading = loading, selected = selected, round = round, leadingIcon = if(leadingIcon)({CallerIcon()}) else null) { ZenlessText(text) }
+            ZenlessButton({ record(text) }, tone = ZenlessTone.entries[tone], size = size, variant = ZenlessButtonVariant.entries[variant], enabled = enabled, loading = loading, selected = selected, round = round, leadingIcon = if(leadingIcon)({CallerIcon()}) else null) { ZenlessText(text) }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             ZenlessBackButton({ record("Back") }, tr("Back", "返回")); ZenlessCloseButton({ record("Close") }, tr("Close", "关闭"))
@@ -186,14 +207,13 @@ internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, v
     }
     Preview(tr("Enabled / disabled", "启用 / 禁用")) {
         FlowRow(horizontalArrangement=Arrangement.spacedBy(26.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-            ZenlessButton({},Modifier.width(244.dp).height(58.dp),tone=ZenlessTone.Warning,size=ZenlessSize.Extra,enabled=false,leadingIcon={CallerIcon()}) { ZenlessText(tr("Unavailable","暂不可用")) }
-            ZenlessButton({record(tr("Continue","继续操作"))},Modifier.width(244.dp).height(58.dp),tone=ZenlessTone.Danger,size=ZenlessSize.Extra,leadingIcon={CallerIcon()}) { ZenlessText(tr("Continue","继续操作")) }
+            ZenlessButton({},Modifier.widthIn(min=244.dp),tone=ZenlessTone.Warning,enabled=false,leadingIcon={CallerIcon()}) { ZenlessText(tr("Unavailable","暂不可用")) }
+            ZenlessButton({record(tr("Continue","继续操作"))},Modifier.widthIn(min=244.dp),tone=ZenlessTone.Danger,leadingIcon={CallerIcon()}) { ZenlessText(tr("Continue","继续操作")) }
         }
     }
     Preview(tr("Parameters", "参数")) {
         ZenlessTextField(text, { text = it }, label = tr("Label", "文字"))
         ZenlessSelect(ZenlessTone.entries.map { it.name }, tone, { tone = it }, label = "Tone")
-        ZenlessSelect(ZenlessSize.entries.map { it.name }, size, { size = it }, label = "Size")
         ZenlessSelect(ZenlessButtonVariant.entries.map { it.name }, variant, { variant = it }, label = "Variant")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             ZenlessSwitch(enabled, { enabled = it }, label = tr("Enabled", "启用")); ZenlessSwitch(loading, { loading = it }, label = tr("Loading", "加载"))
@@ -201,7 +221,7 @@ internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, v
             ZenlessSwitch(leadingIcon, {leadingIcon=it},label=tr("Leading icon","左侧图标"))
         }
     }
-    CodeExample(buttonExample(text, ZenlessTone.entries[tone], ZenlessSize.entries[size], ZenlessButtonVariant.entries[variant], enabled, loading, selected, round, leadingIcon), tr)
+    CodeExample(buttonExample(text, ZenlessTone.entries[tone], size, ZenlessButtonVariant.entries[variant], enabled, loading, selected, round, leadingIcon), tr)
 }
 
 @Composable private fun NavigationDemo(tr: (String, String) -> String, record: (String) -> Unit) {

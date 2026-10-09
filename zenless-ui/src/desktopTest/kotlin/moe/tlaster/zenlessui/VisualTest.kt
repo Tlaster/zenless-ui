@@ -121,7 +121,7 @@ class VisualTest {
             Row(Modifier.fillMaxSize().background(Color.Black).padding(10.dp),horizontalArrangement=Arrangement.spacedBy(26.dp)) {
                 for(enabled in listOf(false,true)) ZenlessButton(
                     {check(enabled)},Modifier.size(244.dp,58.dp).testTag(if(enabled)"enabled-leading" else "disabled-leading"),
-                    tone=if(enabled)ZenlessTone.Danger else ZenlessTone.Warning,size=ZenlessSize.Extra,enabled=enabled,
+                    tone=if(enabled)ZenlessTone.Danger else ZenlessTone.Warning,size=ZenlessSize.Default,enabled=enabled,
                     leadingIcon={val ink=zenlessContentColor;Canvas(Modifier.size(16.dp)) { drawRect(ink) }},
                 ) { ZenlessText(if(enabled)"继续操作" else "暂不可用") }
             }

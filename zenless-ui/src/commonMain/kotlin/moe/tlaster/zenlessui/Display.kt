@@ -73,9 +73,11 @@ public fun ZenlessMetric(value: String, modifier: Modifier = Modifier, unit: Str
 }
 
 @Composable
-public fun ZenlessInfoRow(label: String, value: String, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth().heightIn(min=40.dp).background(Color.Black, RoundedCornerShape(20.dp)).padding(horizontal = 24.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+public fun ZenlessInfoRow(label: String, value: String, modifier: Modifier = Modifier, size: ZenlessSize = LocalControlSize.current) {
+    CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) {
+    Row(modifier.fillMaxWidth().heightIn(min=size.height.dp).background(Color.Black, RoundedCornerShape(50)).padding(horizontal = size.horizontalPadding.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment=Alignment.CenterVertically) {
         ZenlessText(label, Modifier.weight(1f)); ZenlessText(value)
+    }
     }
 }
 
@@ -89,20 +91,20 @@ public fun ZenlessNotice(message: String, modifier: Modifier = Modifier, tone: Z
 }
 
 @Composable
-public fun ZenlessCollapse(title: String, expanded: Boolean, onExpandedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+public fun ZenlessCollapse(title: String, expanded: Boolean, onExpandedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, size: ZenlessSize = LocalControlSize.current, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier) {
         val source=remember { MutableInteractionSource() }
         val feedback=rememberFeedback(source,false,true,buttonFeedback=true)
-        Row(Modifier.fillMaxWidth().heightIn(min=40.dp).background(Color.Black,RoundedCornerShape(20.dp)).drawWithCache { onDrawBehind {
+        Row(Modifier.fillMaxWidth().heightIn(min=size.height.dp).background(Color.Black,RoundedCornerShape(50)).drawWithCache { onDrawBehind {
             if(feedback.highlight>0f) {
-                val outset=2.dp.toPx()+if(feedback.release<0)size.minDimension*.15f*Motion.pulse(feedback.seconds) else 0f
-                drawPath(roundedPath(Rect(Offset.Zero,size).inflate(outset),size.height/2+outset),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
+                val outset=2.dp.toPx()+if(feedback.release<0)this.size.minDimension*.15f*Motion.pulse(feedback.seconds) else 0f
+                drawPath(roundedPath(Rect(Offset.Zero,this.size).inflate(outset),this.size.height/2+outset),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
             }
-        }}.semantics { stateDescription=if(expanded) "Expanded" else "Collapsed" }.pointerClick(true,source) { onExpandedChange(!expanded) }.padding(start=24.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically) {
-            CompositionLocalProvider(LocalInk provides mix(Color.White,Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=14.sp,letterSpacing=0.sp)) {
+        }}.semantics { stateDescription=if(expanded) "Expanded" else "Collapsed" }.pointerClick(true,source) { onExpandedChange(!expanded) }.padding(start=size.horizontalPadding.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically) {
+            CompositionLocalProvider(LocalInk provides mix(Color.White,Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp,letterSpacing=0.sp)) {
             ZenlessText(title, Modifier.weight(1f))
             val angle by animateFloatAsState(if (expanded) 180f else 0f, tween(160))
-            Mark(Mark.Down, Modifier.size(32.dp).graphicsLayer { rotationZ = angle })
+            Mark(Mark.Down, Modifier.size(size.iconSize.dp).graphicsLayer { rotationZ = angle })
             }
         }
         AnimatedVisibility(expanded, enter = expandVertically(tween(180)) + fadeIn(tween(160)), exit = shrinkVertically(tween(180)) + fadeOut(tween(120))) {

@@ -25,7 +25,7 @@ class SwitchTest {
     @Test fun referenceStatesAndStagedMotion() = runDesktopComposeUiTest(width = 284, height = 124) {
         mainClock.autoAdvance = false
         var checked by mutableStateOf(false)
-        setContent { CompositionLocalProvider(LocalDensity provides Density(2f)) {
+        setContent { CompositionLocalProvider(LocalControlSize provides ZenlessSize.Comfortable, LocalDensity provides Density(2f)) {
             Box(Modifier.fillMaxSize().background(Color.Black)) { ZenlessSwitch(checked, { checked = it }, Modifier.testTag("switch")) }
         } }
         mainClock.advanceTimeByFrame()
@@ -82,7 +82,7 @@ class SwitchTest {
 
     @Test fun longLabelsWrapAtNarrowWidthsAndLargeFontScale() = runDesktopComposeUiTest(width = 320, height = 260) {
         mainClock.autoAdvance = false
-        setContent { CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
+        setContent { CompositionLocalProvider(LocalControlSize provides ZenlessSize.Comfortable, LocalDensity provides Density(1f, 1.5f)) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 ZenlessSwitch(true, {}, Modifier.testTag("switch"), label = "Controls enabled")
             }
@@ -99,7 +99,7 @@ class SwitchTest {
         mainClock.autoAdvance = false
         var checked by mutableStateOf(false)
         var changes = 0
-        setContent { CompositionLocalProvider(LocalDensity provides Density(2f)) {
+        setContent { CompositionLocalProvider(LocalControlSize provides ZenlessSize.Comfortable, LocalDensity provides Density(2f)) {
             Column(Modifier.fillMaxSize().background(Color.Black)) {
                 ZenlessSwitch(checked, { checked = it; changes++ }, Modifier.testTag("switch"), label = "屏蔽邀请")
                 ZenlessSwitch(false, { changes++ }, Modifier.testTag("disabled"), enabled = false, label = "屏蔽邀请")

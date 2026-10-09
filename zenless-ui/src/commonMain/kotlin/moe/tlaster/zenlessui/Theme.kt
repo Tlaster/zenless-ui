@@ -14,7 +14,17 @@ import androidx.compose.ui.unit.sp
 
 /** Fixed semantic variants; applications cannot replace the palette. */
 public enum class ZenlessTone { Neutral, Accent, Primary, Success, Warning, Danger, Info }
-public enum class ZenlessSize { Mini, Small, Default, Large, Extra }
+/** Shared control heights and typography, inherited from [ZenlessTheme]. */
+public enum class ZenlessSize(
+    internal val height: Int,
+    internal val fontSize: Int,
+    internal val iconSize: Int,
+    internal val horizontalPadding: Int,
+) {
+    Compact(40, 14, 22, 17),
+    Default(52, 20, 28, 22),
+    Comfortable(62, 24, 34, 26),
+}
 public enum class ZenlessButtonVariant { Filled, Plain, Hollow }
 public enum class ZenlessTextStyle { Inherit, Title, Subtitle, Body, Caption, Number }
 
@@ -36,7 +46,8 @@ internal object Palette {
 }
 internal val LocalInk = compositionLocalOf { Color.White }
 internal val LocalButtonContent = compositionLocalOf { false }
-internal val LocalTextStyle = compositionLocalOf { TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Default) }
+internal val LocalControlSize = compositionLocalOf { ZenlessSize.Default }
+internal val LocalTextStyle = compositionLocalOf { TextStyle(fontSize = 20.sp, fontFamily = FontFamily.Default) }
 
 /** Read the current text/icon ink inside a button content slot, including its press feedback. */
 public val zenlessContentColor: Color
@@ -44,8 +55,8 @@ public val zenlessContentColor: Color
 
 /** The fixed dark theme. Put [ZenlessOverlayHost] inside this theme when using overlays. */
 @Composable
-public fun ZenlessTheme(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalInk provides Color.White, LocalTextStyle provides TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Default)) {
+public fun ZenlessTheme(size: ZenlessSize = ZenlessSize.Default, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalControlSize provides size, LocalInk provides Color.White, LocalTextStyle provides TextStyle(fontSize = size.fontSize.sp, fontFamily = FontFamily.Default)) {
         content()
     }
 }

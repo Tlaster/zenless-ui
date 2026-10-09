@@ -83,7 +83,7 @@ class PressedInkTest {
                         Canvas(Modifier.size(20.dp)) { drawRect(ink) }
                     }
                     ZenlessButton({error("Disabled button activated")},Modifier.testTag("disabled"),enabled=false) { ZenlessText("Disabled",style=ZenlessTextStyle.Caption) }
-                    ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Extra,variant=leadingVariant,round=leadingRound,leadingIcon={
+                    ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Default,variant=leadingVariant,round=leadingRound,leadingIcon={
                         val ink=zenlessContentColor
                         Canvas(Modifier.size(12.dp).testTag("leading-glyph")) { drawRect(ink) }
                     }) { ZenlessText("Leading") }
@@ -183,7 +183,7 @@ class PressedInkTest {
         select.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
         assertEquals(Color.White,onNodeWithText("Current").ink())
         val pixels=select.captureToImage().toPixelMap()
-        assertEquals(Color.White,pixels[pixels.width-24,pixels.height/2],"Select keeps its white arrow while pressed")
+        assertEquals(Color.White,pixels[pixels.width-29,pixels.height/2],"Select keeps its white arrow while pressed")
         select.save("held-select")
         select.performTouchInput { up() };mainClock.advanceTimeBy(300)
         val other=onNodeWithText("Other")

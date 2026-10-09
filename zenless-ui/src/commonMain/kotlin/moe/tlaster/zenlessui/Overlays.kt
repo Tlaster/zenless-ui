@@ -108,7 +108,7 @@ private fun AnchoredOverlay(anchor: IntRect, margin: Int, blockOutside: Boolean,
 @Composable
 public fun ZenlessSelect(
     options: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier,
-    enabled: Boolean = true, label: String = "",
+    enabled: Boolean = true, label: String = "", size: ZenlessSize = LocalControlSize.current,
 ) {
     require(options.isNotEmpty() && selectedIndex in options.indices)
     var expanded by remember { mutableStateOf(false) }
@@ -125,14 +125,16 @@ public fun ZenlessSelect(
     }
     val opacity=remember { Animatable(0f) }
     LaunchedEffect(expanded) { opacity.animateTo(if(expanded)1f else 0f,tween(if(expanded)60 else 100,easing=if(expanded)EaseOutCubic else EaseInCubic)) }
-    FieldLayout(label,modifier) {
-        Row(Modifier.fillMaxWidth().heightIn(min=62.dp).onGloballyPositioned { width=it.size.width; anchor=it.boundsInWindow().roundToIntRect() }
+    val optionHeight = size.height + 2
+    val menuHeight = ((optionHeight + 4) * 5 + 4).dp
+    FieldLayout(label,modifier,size) {
+        Row(Modifier.fillMaxWidth().heightIn(min=size.height.dp).onGloballyPositioned { width=it.size.width; anchor=it.boundsInWindow().roundToIntRect() }
             .semantics { if(label.isNotEmpty())contentDescription=label;stateDescription=options[selectedIndex] }
             .plate(feedback,fill=if(enabled)Color.Black else Color(0xff080808),edge=if(enabled)Color(0xff323232) else Color(0xff191919),enabled=enabled,input=true)
-            .pointerClick(enabled,source) { expanded=!expanded }.padding(start=17.dp,end=12.dp),verticalAlignment=Alignment.CenterVertically) {
-            CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff737373),Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=24.sp)) {
+            .pointerClick(enabled,source) { expanded=!expanded }.padding(start=size.horizontalPadding.dp,end=(size.horizontalPadding*.7f).dp),verticalAlignment=Alignment.CenterVertically) {
+            CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff737373),Color.Black,feedback.highlight)) {
                 ZenlessText(options[selectedIndex],Modifier.weight(1f),maxLines=1)
-                Mark(Mark.Down,Modifier.padding(start=7.dp).size(24.dp))
+                Mark(Mark.Down,Modifier.padding(start=7.dp).size(size.iconSize.dp))
             }
         }
     }
@@ -143,21 +145,21 @@ public fun ZenlessSelect(
                 val width=if(i==0)2f else 1f
                 val outset=(if(i==0)1f else i+1.5f).dp.toPx()
                 val alpha=if(i==0)1f else (rim-i-1).coerceIn(0f,1f)
-                drawPath(roundedPath(Rect(Offset.Zero,size).inflate(outset),size.minDimension/2+outset),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=alpha),style=Stroke(width.dp.toPx()))
+                drawPath(roundedPath(Rect(Offset.Zero,this.size).inflate(outset),this.size.minDimension/2+outset),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=alpha),style=Stroke(width.dp.toPx()))
             }
         }
     }) { above ->
         val scroll=rememberScrollState()
-        LaunchedEffect(Unit) { scroll.scrollTo(with(density){(selectedIndex*68).dp.roundToPx()}) }
-        Column(Modifier.width(with(density){width.toDp()}).heightIn(max=368.dp).graphicsLayer { alpha=opacity.value;translationY=(if(above)32 else -32).dp.toPx()*(1-progress.value) },horizontalAlignment=Alignment.CenterHorizontally) {
-            Column(Modifier.weight(1f,fill=false).fillMaxWidth().heightIn(max=344.dp).background(Color(0xff262626),RoundedCornerShape(36.dp)).border(2.dp,Color(0xff141414),RoundedCornerShape(36.dp)).padding(4.dp).clip(RoundedCornerShape(32.dp)).verticalScroll(scroll),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        LaunchedEffect(size,selectedIndex) { scroll.scrollTo(with(density){(selectedIndex*(optionHeight+4)).dp.roundToPx()}) }
+        Column(Modifier.width(with(density){width.toDp()}).heightIn(max=menuHeight+24.dp).graphicsLayer { alpha=opacity.value;translationY=(if(above)32 else -32).dp.toPx()*(1-progress.value) },horizontalAlignment=Alignment.CenterHorizontally) {
+            Column(Modifier.weight(1f,fill=false).fillMaxWidth().heightIn(max=menuHeight).background(Color(0xff262626),RoundedCornerShape((optionHeight/2+4).dp)).border(2.dp,Color(0xff141414),RoundedCornerShape((optionHeight/2+4).dp)).padding(4.dp).clip(RoundedCornerShape((optionHeight/2).dp)).verticalScroll(scroll),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                 options.forEachIndexed { index,text ->
                     val optionSource=remember { MutableInteractionSource() }
                     val optionFeedback=rememberFeedback(optionSource,index==selectedIndex,true)
-                    Box(Modifier.fillMaxWidth().heightIn(min=64.dp).drawWithCache { onDrawBehind {
-                        if(optionFeedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(optionFeedback.seconds)).copy(alpha=optionFeedback.highlight),cornerRadius=CornerRadius(size.height/2))
-                    }}.semantics { selected=index==selectedIndex }.pointerClick(expanded,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=16.dp),contentAlignment=Alignment.Center) {
-                        CompositionLocalProvider(LocalInk provides mix(if(index==selectedIndex)Color.Black else Color.White,Color.Black,optionFeedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=24.sp)) { ZenlessText(text,maxLines=1) }
+                    Box(Modifier.fillMaxWidth().heightIn(min=optionHeight.dp).drawWithCache { onDrawBehind {
+                        if(optionFeedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(optionFeedback.seconds)).copy(alpha=optionFeedback.highlight),cornerRadius=CornerRadius(this.size.height/2))
+                    }}.semantics { selected=index==selectedIndex }.pointerClick(expanded,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp),contentAlignment=Alignment.Center) {
+                        CompositionLocalProvider(LocalInk provides mix(if(index==selectedIndex)Color.Black else Color.White,Color.Black,optionFeedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(text,maxLines=1) }
                     }
                 }
             }
@@ -303,7 +305,7 @@ public fun ZenlessAlert(
 @Composable
 private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,onClick:()->Unit) {
     ZenlessButton(onClick,Modifier.width(width).heightIn(min=56.dp),
-        tone=if(confirm)ZenlessTone.Success else ZenlessTone.Danger,size=ZenlessSize.Extra,enabled=enabled,
+        tone=if(confirm)ZenlessTone.Success else ZenlessTone.Danger,size=ZenlessSize.Default,enabled=enabled,
         leadingIcon={Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp))},
     ) {
         ZenlessText(text,maxLines=1)

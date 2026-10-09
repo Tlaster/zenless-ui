@@ -29,7 +29,7 @@ class TabsTest {
     @Test fun colorOnlyTabsKeepCircularOuterEndsAndSkewedInnerEdges() {
         for(density in listOf(1,2)) runDesktopComposeUiTest(width=680,height=512) {
             mainClock.autoAdvance=false
-            setContent { CompositionLocalProvider(LocalDensity provides Density(density.toFloat())) { ZenlessTheme {
+            setContent { CompositionLocalProvider(LocalDensity provides Density(density.toFloat())) { ZenlessTheme(size=ZenlessSize.Compact) {
                 Column(Modifier.background(Color.Black)) {
                     for(index in 0..3) Box(Modifier.size(340.dp,64.dp).testTag("tabs-$index")) {
                         ZenlessTabs(List(if(index==3)1 else 3) { "" },if(index==3)0 else index,{},
@@ -75,7 +75,7 @@ class TabsTest {
         var expand by mutableStateOf(true)
         var selected by mutableIntStateOf(0)
         var clicks=0
-        setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
+        setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme(size=ZenlessSize.Compact) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 if(expand) ZenlessTabs(listOf("Left","Middle","Right"),selected,{selected=it;clicks++},Modifier.offset(30.dp,50.dp).width(330.dp))
                 else ZenlessTabs(listOf("Left","Middle","Right"),selected,{selected=it;clicks++},Modifier.offset(30.dp,50.dp).width(330.dp),expand=false)
@@ -102,7 +102,7 @@ class TabsTest {
         for(expand in listOf(false,true)) runDesktopComposeUiTest(width=400,height=160) {
             mainClock.autoAdvance=false
             var selected by mutableIntStateOf(0)
-            setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
+            setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme(size=ZenlessSize.Compact) {
                 Column(Modifier.background(Color.Black)) {
                     for(row in 0..1) Box(Modifier.size(400.dp,80.dp).testTag("motion-$row")) {
                         ZenlessTabs(listOf("","",""),if(row==0)selected else 0,{},Modifier.offset(30.dp,20.dp).width(330.dp),expand=expand)
@@ -149,7 +149,7 @@ class TabsTest {
     @Test fun movingIndicatorClipsTextInkAndCapturesBothStyles() = runDesktopComposeUiTest(width=800,height=320) {
         mainClock.autoAdvance=false
         var selected by mutableIntStateOf(0)
-        setContent { CompositionLocalProvider(LocalDensity provides Density(2f)) { ZenlessTheme {
+        setContent { CompositionLocalProvider(LocalDensity provides Density(2f)) { ZenlessTheme(size=ZenlessSize.Compact) {
             Column(Modifier.background(Color.Black)) {
                 for(expand in listOf(true,false)) Box(Modifier.size(400.dp,80.dp)) {
                     ZenlessTabs(if(expand)listOf("Overview","Details","History") else listOf("我的好友","添加好友","寻找好友"),selected,{},
@@ -175,7 +175,7 @@ class TabsTest {
         mainClock.autoAdvance=false
         var selected by mutableIntStateOf(0)
         var count by mutableIntStateOf(3)
-        setContent { CompositionLocalProvider(LocalDensity provides Density(1f),LocalLayoutDirection provides LayoutDirection.Rtl) { ZenlessTheme {
+        setContent { CompositionLocalProvider(LocalDensity provides Density(1f),LocalLayoutDirection provides LayoutDirection.Rtl) { ZenlessTheme(size=ZenlessSize.Compact) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 ZenlessTabs(List(count) { "" },selected,{},Modifier.fillMaxWidth().padding(horizontal=30.dp,vertical=20.dp),expand=false)
             }

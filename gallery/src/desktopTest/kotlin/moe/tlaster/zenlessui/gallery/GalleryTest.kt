@@ -32,11 +32,26 @@ class GalleryTest {
         compose.onNodeWithText("缩放呼吸").assertIsOn().performClick()
         compose.mainClock.advanceTimeBy(400)
         compose.onNodeWithText("缩放呼吸").assertIsOff()
-        compose.onNodeWithText("folder = false,\n    expand = false,",substring=true).assertExists()
+        compose.onNodeWithText("folder = false,\n        expand = false,",substring=true).assertExists()
         capture("gallery-tabs-color-only")
         compose.onNodeWithText("文件夹样式").performClick()
         compose.mainClock.advanceTimeBy(200)
         compose.onNodeWithText("缩放呼吸").assertDoesNotExist()
+    }
+
+    @Test fun changingSizeUpdatesControlsAndCopyableCode() {
+        compose.mainClock.autoAdvance=false
+        compose.setContent { Box(Modifier.requiredSize(1024.dp,768.dp)) { GalleryApp() } }
+        compose.onAllNodesWithText("选择器与滑条")[0].performClick()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithContentDescription("控件尺寸").performClick()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithText("宽松 · 62 dp / 24 sp").performClick()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithContentDescription("布局").assertHeightIsEqualTo(62.dp)
+        compose.onNodeWithContentDescription("等级").assertHeightIsEqualTo(62.dp)
+        compose.onNodeWithText("ZenlessTheme(size = ZenlessSize.Comfortable)",substring=true).assertExists()
+        capture("gallery-comfortable")
     }
 
     @Test fun galleryNavigatesAndCapturesBothLayouts() {
@@ -58,6 +73,10 @@ class GalleryTest {
         compose.runOnIdle { wide = false }
         compose.mainClock.advanceTimeBy(400)
         capture("gallery-mobile")
+        compose.onNodeWithText("English").performClick()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithContentDescription("Control size").assertIsDisplayed()
+        capture("gallery-mobile-english")
     }
 
     private fun capture(name: String) {
