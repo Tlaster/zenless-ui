@@ -1,10 +1,12 @@
 package moe.tlaster.zenlessui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -20,6 +22,30 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class VisualTest {
+    @Test fun backButtonAtReferenceDensity() = runDesktopComposeUiTest(width=188,height=128) {
+        mainClock.autoAdvance=false
+        setContent {
+            CompositionLocalProvider(LocalDensity provides Density(2f)) {
+                Box(Modifier.requiredSize(94.dp,64.dp).background(Color.Black)) {
+                    ZenlessBackButton({},"Back",Modifier.offset(2.dp,2.dp))
+                }
+            }
+        }
+        mainClock.advanceTimeBy(16)
+        val pixels=onRoot().captureToImage().toPixelMap()
+        val red=Color(0xffc50600)
+        for((x,y) in listOf(100 to 45,100 to 85,80 to 12)) assertEquals(red,pixels[x,y],"Reference red at $x,$y")
+        assertTrue(pixels[50,8].red>.97f && pixels[50,8].green in .08f.. .14f,"Upper rim has a bright bevel")
+        assertEquals(Color(0xff090909),pixels[30,21],"Light checker cell")
+        assertEquals(Color.Black,pixels[35,21],"Dark checker cell")
+        // Native reference scanlines, allowing one pixel for renderer antialiasing.
+        for((y,left,right) in listOf(Triple(12,13,151),Triple(30,5,171),Triple(65,18,182),Triple(100,38,170),Triple(120,72,136))) {
+            val ink=(0 until pixels.width).filter { pixels[it,y].red>100/255f && pixels[it,y].green<50/255f }
+            assertTrue(kotlin.math.abs(ink.first()-left)<=1 && kotlin.math.abs(ink.last()-right)<=1,"Reference contour at row $y")
+        }
+        save("back-reference-density")
+    }
+
     @Test fun overlayGeometryAndDrawerScrollbar() = runDesktopComposeUiTest(width=1024,height=768) {
         mainClock.autoAdvance=false
         var alert by mutableStateOf(true)

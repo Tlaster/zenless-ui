@@ -132,12 +132,24 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     Box(modifier.size(90.dp, 60.dp).semantics { contentDescription = description }.drawWithCache {
         val rect = Rect(Offset.Zero, size)
         val path = headerPath(rect, back)
-        val inner = headerPath(rect.deflate(5.dp.toPx()), back)
+        val inner = if(back)backPlatePath(rect,face=true) else headerPath(rect.deflate(5.dp.toPx()),false)
+        val glint = if(back)headerPath(rect,true,-1.dp.toPx()) else null
         onDrawBehind {
-            val color = if (back) Color(0xffe51c00) else Color(0xffc90000)
+            val color = if (back) Color(0xffc50600) else Color(0xffc90000)
             drawPath(path, color)
-            drawPath(inner, if (back) Color(0xff171717) else mix(color,Color.Black,.25f))
-            drawPath(inner, Color.Black, style = Stroke(1.6.dp.toPx()))
+            if(back) {
+                clipPath(inner) {
+                    scale(size.width/90*.0801f,size.height/60*.0801f,pivot=Offset.Zero) {
+                        translate(4.31f,4.37f) { drawContext.canvas.drawRect(Rect(-5f,-5f,1125f,750f),backCheckerPaint) }
+                    }
+                }
+                drawPath(glint!!,Brush.linearGradient(
+                    0f to Color(0xffff2001),.45f to Color(0xffff1c01),1f to color,
+                    start=Offset.Zero,end=Offset(size.width*.28f,size.height*.63f)),style=Stroke(1.3.dp.toPx()))
+            } else {
+                drawPath(inner,mix(color,Color.Black,.25f))
+                drawPath(inner,Color.Black,style=Stroke(1.6.dp.toPx()))
+            }
             if (feedback.highlight > 0f) {
                 val outset = if (feedback.release < 0) size.minDimension * .15f * Motion.pulse(feedback.seconds) else 0f
                 drawPath(headerPath(rect.inflate(2.dp.toPx()), back, outset), mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
@@ -148,15 +160,7 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     }) {
         Canvas(Modifier.fillMaxSize()) {
             if (back) {
-                val p=Path().apply {
-                    fun x(v:Float)=size.width*(27+v*35)/90
-                    fun y(v:Float)=size.height*(15+v*30)/60
-                    moveTo(x(.28f),y(.3f));lineTo(x(.65f),y(.3f))
-                    cubicTo(x(1f),y(.3f),x(1f),y(.83f),x(.65f),y(.83f));lineTo(x(.42f),y(.83f))
-                }
-                drawPath(p,Color(1f,.08f,0f),style=Stroke(size.height*.095f,cap=StrokeCap.Butt))
-                val head=Path().apply { moveTo(size.width*29.1f/90,size.height*24/60);lineTo(size.width*41.7f/90,size.height*16.2f/60);lineTo(size.width*41.7f/90,size.height*31.8f/60);close() }
-                drawPath(head,Color(1f,.08f,0f))
+                drawPath(backArrowPath(Rect(Offset.Zero,size)),Color(0xffc50600))
             } else {
                 val start=Offset(size.width*30.9f/90,size.height*20.9f/60)
                 val end=Offset(size.width*49.1f/90,size.height*39.1f/60)

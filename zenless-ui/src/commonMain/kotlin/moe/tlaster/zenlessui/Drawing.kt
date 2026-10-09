@@ -64,21 +64,98 @@ private val headerContour by lazy {
     points.dropLast(1)
 }
 
+// Measured in the navigation button's 90 by 60 logical coordinate space.
+private val backOuter = floatArrayOf(
+    14.25f,1.02f,
+    29.58f,1.02f,44.92f,1.02f,60.25f,1.02f,
+    76.93f,.78f,89.68f,14.28f,89.745f,30.75f,
+    88.78f,46.77f,76.54f,59.01f,60.25f,58.90f,
+    53.25f,58.90f,46.25f,58.90f,39.25f,58.90f,
+    30.93f,58.99f,22.04f,54.91f,17.01f,48.25f,
+    11.34f,39.81f,6.37f,30.24f,2.25f,21.04f,
+    1.05f,18.76f,.99f,16.77f,.664f,14.25f,
+    .674f,6.20f,6.095f,.673f,14.25f,1.02f,
+)
+private val backInner = floatArrayOf(
+    13.84f,6.25f,
+    29.30f,6.07f,44.78f,6.22f,60.25f,6.17f,
+    73.73f,6.37f,84.71f,17.07f,84.30f,30.75f,
+    83.95f,43.59f,73.40f,53.38f,60.75f,53.834f,
+    53.58f,53.82f,46.42f,53.84f,39.25f,53.825f,
+    32.87f,53.48f,27.20f,51.28f,22.75f,46.69f,
+    16.68f,39.53f,12.33f,29.50f,8.25f,21.01f,
+    7.30f,18.96f,6.02f,16.57f,6.071f,14.25f,
+    6.11f,8.95f,8.92f,6.98f,13.84f,6.25f,
+)
+internal fun backPlatePath(rect: Rect, face: Boolean = false): Path = Path().apply {
+    val p=if(face)backInner else backOuter
+    fun x(v:Float)=rect.left+v*rect.width/90
+    fun y(v:Float)=rect.top+v*rect.height/60
+    moveTo(x(p[0]),y(p[1]))
+    for(i in 2 until p.size step 6) cubicTo(x(p[i]),y(p[i+1]),x(p[i+2]),y(p[i+3]),x(p[i+4]),y(p[i+5]))
+    close()
+}
+private val backContour by lazy {
+    val p=backOuter
+    val points=mutableListOf(Offset(p[0],p[1]))
+    for(i in 2 until p.size step 6) {
+        val from=points.last();val a=Offset(p[i],p[i+1]);val b=Offset(p[i+2],p[i+3]);val c=Offset(p[i+4],p[i+5])
+        for(j in 1..16) { val t=j/16f;val u=1-t;points.add(from*(u*u*u)+a*(3*u*u*t)+b*(3*u*t*t)+c*(t*t*t)) }
+    }
+    points.dropLast(1)
+}
+internal val backCheckerPaint by lazy {
+    // Bake the soft cell edges because repeated image shaders use nearest sampling on Skia.
+    val tile=ImageBitmap(60,60);val canvas=Canvas(tile)
+    val coverage=FloatArray(60) { i ->
+        val t=i+.5f;val distance=minOf(t,kotlin.math.abs(t-30),60-t)
+        (.5f+(if(t<30)distance else -distance)/9.5f).coerceIn(0f,1f)
+    }
+    val paint=Paint().apply { isAntiAlias=false }
+    for(y in 0..59)for(x in 0..59) {
+        val a=coverage[x];val b=coverage[y];val shade=(9*(a*b+(1-a)*(1-b))+.5f).toInt()
+        paint.color=Color(shade,shade,shade)
+        canvas.drawRect(Rect(x.toFloat(),y.toFloat(),x+1f,y+1f),paint)
+    }
+    Paint().apply { shader=ImageShader(tile,TileMode.Repeated,TileMode.Repeated) }
+}
+internal fun backArrowPath(rect:Rect):Path=Path().apply {
+    fun x(v:Float)=rect.left+v*rect.width/90
+    fun y(v:Float)=rect.top+v*rect.height/60
+    moveTo(x(39.457f),y(13.25f))
+    cubicTo(x(40.192f),y(14.708f),x(39.386f),y(16.51f),x(40.074f),y(17.75f))
+    cubicTo(x(43.415f),y(17.938f),x(46.87f),y(17.75f),x(50.25f),y(17.884f))
+    cubicTo(x(57.101f),y(17.386f),x(63.536f),y(23.918f),x(62.914f),y(30.75f))
+    cubicTo(x(63.244f),y(37.558f),x(56.523f),y(43.714f),x(49.75f),y(42.904f))
+    cubicTo(x(46.443f),y(42.819f),x(42.87f),y(43.104f),x(39.639f),y(42.75f))
+    cubicTo(x(39.291f),y(40.901f),x(39.554f),y(38.667f),x(39.502f),y(36.75f))
+    cubicTo(x(41.476f),y(35.524f),x(47.519f),y(36.427f),x(50.25f),y(36.087f))
+    cubicTo(x(53.616f),y(35.771f),x(55.58f),y(34.169f),x(56.038f),y(30.75f))
+    cubicTo(x(55.963f),y(26.815f),x(53.648f),y(25.167f),x(49.982f),y(24.75f))
+    cubicTo(x(46.791f),y(24.814f),x(42.865f),y(24.248f),x(39.873f),y(24.75f))
+    cubicTo(x(39.581f),y(25.945f),x(40.122f),y(27.686f),x(39.514f),y(28.75f))
+    cubicTo(x(35.965f),y(27.727f),x(30.815f),y(23.879f),x(27.164f),y(21.75f))
+    cubicTo(x(29.073f),y(18.746f),x(36.353f),y(15.486f),x(39.457f),y(13.25f))
+    close()
+}
+
 internal fun headerPath(rect: Rect, back: Boolean, outset: Float = 0f): Path = Path().apply {
-    fun x(v: Float) = rect.left + (if (back) 120 - v else v) * rect.width / 120
-    fun y(v: Float) = rect.top + v * rect.height / 80
-    if(outset>0f) {
-        fun point(index:Int)=headerContour[(index+headerContour.size)%headerContour.size].let { Offset(x(it.x),y(it.y)) }
+    fun x(v: Float) = rect.left + v * rect.width / (if(back)90 else 120)
+    fun y(v: Float) = rect.top + v * rect.height / (if(back)60 else 80)
+    if(outset!=0f) {
+        val contour=if(back)backContour else headerContour
+        fun point(index:Int)=contour[(index+contour.size)%contour.size].let { Offset(x(it.x),y(it.y)) }
         fun normalized(value:Offset)=value/value.getDistance().coerceAtLeast(.0001f)
-        headerContour.indices.forEach { i ->
+        contour.indices.forEach { i ->
             val at=point(i);val a=normalized(at-point(i-1));val b=normalized(point(i+1)-at)
-            val normal=Offset(a.y+b.y,-a.x-b.x)*(if(back)-1f else 1f)
+            val normal=Offset(a.y+b.y,-a.x-b.x)
             val expanded=at+normal*(outset/(1+a.x*b.x+a.y*b.y).coerceAtLeast(.1f))
             if(i==0)moveTo(expanded.x,expanded.y) else lineTo(expanded.x,expanded.y)
         }
         close()
         return@apply
     }
+    if(back) { addPath(backPlatePath(rect));return@apply }
     moveTo(x(42f), y(1f)); lineTo(x(99f), y(1f))
     cubicTo(x(119f), y(1f), x(124f), y(10f), x(117f), y(27f)); lineTo(x(104f), y(56f))
     cubicTo(x(95f), y(73f), x(85f), y(79f), x(68f), y(79f)); lineTo(x(38f), y(79f))
