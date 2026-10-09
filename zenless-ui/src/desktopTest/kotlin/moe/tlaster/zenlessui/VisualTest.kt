@@ -30,11 +30,12 @@ class VisualTest {
     @Test fun leadingButtonsShareTypographyAndCenterInTheRemainingBody() = runDesktopComposeUiTest(width=640,height=160) {
         mainClock.autoAdvance=false
         var leading by mutableStateOf(false)
+        var fixedWidth by mutableStateOf(true)
         var size by mutableStateOf(ZenlessSize.Default)
         var direction by mutableStateOf(LayoutDirection.Ltr)
         setContent { CompositionLocalProvider(LocalDensity provides Density(2f),LocalLayoutDirection provides direction) { ZenlessTheme {
             Box(Modifier.fillMaxSize()) {
-                ZenlessButton({},Modifier.size(244.dp,58.dp).testTag("button"),size=size,
+                ZenlessButton({},Modifier.height(58.dp).then(if(fixedWidth)Modifier.width(244.dp) else Modifier).testTag("button"),size=size,
                     leadingIcon=if(leading)({Box(Modifier.size(12.dp))}) else null) {
                     ZenlessText("Action",Modifier.testTag("label"))
                 }
@@ -45,15 +46,17 @@ class VisualTest {
             onNodeWithTag("label",useUnmergedTree=true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
             return results.single()
         }
-        for(value in ZenlessSize.entries)for(layoutDirection in LayoutDirection.entries) {
-            runOnIdle { size=value;direction=layoutDirection;leading=false };mainClock.advanceTimeByFrame()
+        for(value in ZenlessSize.entries)for(layoutDirection in LayoutDirection.entries)for(fixed in listOf(true,false)) {
+            runOnIdle { size=value;direction=layoutDirection;fixedWidth=fixed;leading=false };mainClock.advanceTimeByFrame()
             val plain=textLayout().layoutInput.style
             runOnIdle { leading=true };mainClock.advanceTimeByFrame()
             assertEquals(plain,textLayout().layoutInput.style,"A leading icon does not change typography at $value")
             val button=onNodeWithTag("button").fetchSemanticsNode().boundsInRoot
             val label=onNodeWithTag("label",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
-            val shift=button.height*58.5f/58f/2*(if(direction==LayoutDirection.Ltr)1 else -1)
-            assertTrue(kotlin.math.abs(label.center.x-button.center.x-shift)<=1,"Center text in the body beyond the leading circle")
+            val diameter=button.height*58.5f/58f
+            val shift=diameter/4*(if(direction==LayoutDirection.Ltr)1 else -1)
+            assertTrue(kotlin.math.abs(label.center.x-button.center.x-shift)<=1,"Center between the circle's vertical diameter and the trailing edge")
+            assertTrue(if(direction==LayoutDirection.Ltr)label.left>=button.left+diameter-1 else label.right<=button.right-diameter+1,"Text stays outside the icon circle even at natural width")
         }
     }
 
@@ -127,7 +130,7 @@ class VisualTest {
         val disabled=onNodeWithTag("disabled-leading");val enabled=onNodeWithTag("enabled-leading")
         val label=onNodeWithText("继续操作",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
         val button=enabled.fetchSemanticsNode().boundsInRoot
-        assertTrue(kotlin.math.abs(label.center.x-button.center.x-button.height*58.5f/58f/2)<=1,"The label is centered to the right of the leading circle")
+        assertTrue(kotlin.math.abs(label.center.x-button.center.x-button.height*58.5f/58f/4)<=1,"The label centers from the circular slot's vertical diameter")
         val off=disabled.captureToImage().toPixelMap();val on=enabled.captureToImage().toPixelMap()
         assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
         assertEquals(Color(0xff3d3d3d),on[300,2],"The upper bevel keeps the reference brightness")

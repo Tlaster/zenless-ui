@@ -100,10 +100,11 @@ public fun ZenlessButton(
         CompositionLocalProvider(LocalInk provides ink, LocalButtonContent provides true, LocalTextStyle provides LocalTextStyle.current.copy(
             fontSize = font.sp, letterSpacing = 1.sp, fontWeight = FontWeight.Normal)) {
             Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.layout { measurable, constraints ->
-                val leadingWidth = if(leadingIcon!=null)(constraints.minHeight * 58.5f / 58f).roundToInt() else 0
-                val body = measurable.measure(constraints.offset(horizontal = -leadingWidth))
-                layout(body.width + leadingWidth, body.height) { body.placeRelative(leadingWidth, 0) }
-            }.padding(horizontal=if(leadingIcon!=null)12.dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
+                val contentStart = if(leadingIcon!=null)(constraints.minHeight * 58.5f / 58f / 2).roundToInt() else 0
+                val sidePadding = if(leadingIcon!=null)maxOf(contentStart,12.dp.roundToPx()) else padding.dp.roundToPx()
+                val body = measurable.measure(constraints.offset(horizontal = -contentStart - 2*sidePadding))
+                layout(body.width + contentStart + 2*sidePadding, body.height) { body.placeRelative(contentStart + sidePadding, 0) }
+            }, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
             if(leadingIcon!=null) Box(Modifier.matchParentSize().graphicsLayer { alpha=if(loading)0f else 1f },contentAlignment=Alignment.CenterStart) {
                 val badge=when(tone) { ZenlessTone.Neutral->Color.White;ZenlessTone.Danger->Color(0xffff2b00);ZenlessTone.Warning->Color(0xffffb000);else->semantic }
                 Box(Modifier.fillMaxHeight().aspectRatio(58.5f/58f).drawWithCache {
