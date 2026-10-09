@@ -1,13 +1,13 @@
 package moe.tlaster.zenlessui
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,14 +16,16 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -93,16 +95,83 @@ public fun ZenlessRadioButton(selected: Boolean, onClick: () -> Unit, modifier: 
 @Composable
 public fun ZenlessSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, label: String = "") {
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled)
-    val fraction by animateFloatAsState(if (checked) 1f else 0f, tween(160))
-    Row(modifier.heightIn(min = 48.dp).focusProperties { canFocus = false }
-        .triStateToggleable(if (checked) ToggleableState.On else ToggleableState.Off, interactionSource = source, indication = null, enabled = enabled, role = Role.Switch) { onCheckedChange(!checked) }.padding(6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Canvas(Modifier.size(52.dp, 30.dp).plate(feedback, if (enabled) mix(Color.Black, Palette.signal, fraction) else Color(0xff292929), pattern = false)) {
-            val center=Offset(15.dp.toPx()+(size.width-30.dp.toPx())*fraction,size.height/2)
-            metalKnob(center)
+    val transition = updateTransition(checked)
+    // The recording separates the departing legend, thumb travel, and arriving green face.
+    val position by transition.animateFloat(transitionSpec = { tween(133, if (targetState) 0 else 33, CubicBezierEasing(.2f, 0f, .2f, 1f)) }) { if (it) 1f else 0f }
+    val green by transition.animateFloat(transitionSpec = { if (targetState) tween(83, 50, Motion.smoothEasing) else tween(33, easing = Motion.smoothEasing) }) { if (it) 1f else 0f }
+    val onInk by transition.animateFloat(transitionSpec = { if (targetState) tween(67, 67) else snap() }) { if (it) 1f else 0f }
+    val offInk by transition.animateFloat(transitionSpec = { if (targetState) snap() else tween(67, 67) }) { if (it) 0f else 1f }
+    Row(modifier.heightIn(min = 62.dp).focusProperties { canFocus = false }
+        .toggleable(checked, source, null, enabled, Role.Switch, onCheckedChange)
+        .drawBehind {
+            if (label.isNotEmpty()) {
+                val bounds = Rect(0f, 3.dp.toPx(), size.width, size.height - 2.dp.toPx())
+                drawPath(roundedPath(bounds, bounds.height / 2), Color.Black)
+                drawPath(roundedPath(bounds.deflate(2.dp.toPx()), bounds.height / 2 - 2.dp.toPx()),
+                    Brush.verticalGradient(listOf(Color(0xff282828), Color(0xff171717)), startY = bounds.top, endY = bounds.bottom))
+                drawPath(roundedPath(bounds.deflate(2.5.dp.toPx()), bounds.height / 2 - 2.5.dp.toPx()),
+                    Brush.verticalGradient(listOf(Color(0xff343434), Color.Transparent), startY = bounds.top, endY = 14.dp.toPx()), style = Stroke(1.dp.toPx()))
+            }
+        }, verticalAlignment = Alignment.CenterVertically) {
+        if (label.isNotEmpty()) CompositionLocalProvider(
+            LocalInk provides if (enabled) Color.White else Palette.muted,
+            LocalTextStyle provides LocalTextStyle.current.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+        ) { ZenlessText(label, Modifier.weight(1f, fill = false).padding(start = 23.dp, end = 17.dp)) }
+        Canvas(Modifier.size(142.dp, 62.dp)) {
+            scale(density, density, pivot = Offset.Zero) {
+                fun pill(rect: Rect, color: Color) = drawPath(roundedPath(rect, rect.height / 2), color)
+                val outer = Rect(0f, 0f, 142f, 62f)
+                pill(outer, Color.Black)
+                drawPath(roundedPath(outer.deflate(2.5f), 28.5f), Brush.verticalGradient(
+                    0f to Color(0xff0b0b0b), .55f to Color(0xff0b0b0b), 1f to Color(0xff191919), endY = 60f))
+                drawPath(roundedPath(outer.deflate(3.25f), 27.75f), Brush.linearGradient(
+                    listOf(Color(0xff2c2c2c), Color(0xff161616)), end = Offset(130f, 50f)), style = Stroke(1.5f))
+                pill(Rect(7.5f, 10.5f, 130.5f, 52f), Color.Black)
+                drawRoundRect(mix(Color(0xff272727), if (enabled) Color(0xff36a100) else Color(0xff455335), green),
+                    Offset(14.25f, 14.5f), Size(112.25f, 33.5f), CornerRadius(15.75f, 16.75f))
+                translate(40.5f, 21f) { scale(1f, 1.1f, Offset.Zero) { drawPath(switchOn, Color.Black, onInk) } }
+                translate(72.5f, 22f) { drawPath(switchOff, Color.Black, offInk) }
+                switchKnob(Offset(28.5f + 86.5f * position, 31f))
+            }
         }
-        if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color.White else Palette.muted) { ZenlessText(label) }
+    }
+}
+
+private fun DrawScope.switchKnob(center: Offset) {
+    drawCircle(Color.Black, 21f, center + Offset(-.5f, 0f))
+    fun ring(radius: Float, shades: List<Int>) {
+        drawCircle(Brush.sweepGradient(shades.map { Color(it, it, it) }, center), radius, center)
+    }
+    ring(16.75f, listOf(11, 9, 26, 34, 46, 37, 76, 149, 97, 55, 18, 6, 11))
+    ring(16f, listOf(14, 22, 40, 47, 55, 37, 85, 151, 209, 108, 67, 35, 14))
+    ring(14.5f, listOf(10, 21, 39, 47, 55, 44, 74, 170, 230, 114, 67, 35, 10))
+    ring(12.7f, listOf(14, 21, 36, 57, 69, 75, 114, 255, 255, 123, 89, 29, 14))
+    val face = center + Offset(0f, .5f)
+    drawCircle(Brush.radialGradient(0f to Color(0xff4b4b4b), .92f to Color(0xff4b4b4b), 1f to Color(0xff4b4b4b).copy(alpha = 0f), center = face, radius = 11.4f), 11.4f, face)
+    drawRoundRect(Color(0xff656565), center + Offset(-9f, -1.1f), Size(7.5f, 3f), CornerRadius(.8f))
+    drawRoundRect(Color(0xff353535), center + Offset(-8.7f, -1.6f), Size(7f, 2f), CornerRadius(.5f))
+}
+
+// Intrinsic ON/OFF artwork keeps the condensed lettering identical across platform fonts.
+private fun Path.switchO(x: Float, width: Float, height: Float) {
+    addRoundRect(RoundRect(Rect(x, -.5f, x + width, height - .5f), CornerRadius(width / 2, 4f)))
+    addRoundRect(RoundRect(Rect(x + width / 2 - .85f, 3.5f, x + width / 2 + .85f, height - 4f), CornerRadius(.85f)))
+}
+
+private val switchOn = Path().apply {
+    fillType = PathFillType.EvenOdd
+    switchO(0f, 13f, 20.5f)
+    moveTo(15f, 0f); lineTo(19.5f, 0f); lineTo(23f, 9f); lineTo(23f, 0f); lineTo(27.5f, 0f)
+    lineTo(27.5f, 19.5f); lineTo(22.5f, 19.5f); lineTo(19f, 11f); lineTo(19f, 19.5f); lineTo(15f, 19.5f); close()
+}
+
+private val switchOff = Path().apply {
+    fillType = PathFillType.EvenOdd
+    switchO(0f, 11.5f, 20f)
+    for (x in listOf(13.5f, 23f)) {
+        moveTo(x, 0f); lineTo(x + 8.5f, 0f); lineTo(x + 8.5f, 4f); lineTo(x + 5f, 4f)
+        lineTo(x + 5f, 8f); lineTo(x + 7.5f, 8f); lineTo(x + 7.5f, 12f)
+        lineTo(x + 5f, 12f); lineTo(x + 5f, 19f); lineTo(x, 19f); close()
     }
 }
 
