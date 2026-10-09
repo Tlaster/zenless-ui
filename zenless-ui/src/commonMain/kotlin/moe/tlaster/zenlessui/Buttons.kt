@@ -8,6 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -158,10 +160,11 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     Box(modifier.size(90.dp, 60.dp).semantics { contentDescription = description }.drawWithCache {
         val rect = Rect(Offset.Zero, size)
         val path = headerPath(rect, back)
-        val inner = if(back)backPlatePath(rect,face=true) else headerPath(rect.deflate(5.dp.toPx()),false)
-        val glint = if(back)headerPath(rect,true,-1.dp.toPx()) else null
+        val inner = if(back)backPlatePath(rect,face=true) else navigationPlatePath(rect,closeFace)
+        val ring = if(back)null else navigationPlatePath(rect,closeRing)
+        val glint = headerPath(rect,back,-1.dp.toPx())
         onDrawBehind {
-            val color = if (back) Color(0xffc50600) else Color(0xffc90000)
+            val color = Color(0xffc50600)
             drawPath(path, color)
             if(back) {
                 clipPath(inner) {
@@ -169,13 +172,25 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
                         translate(4.31f,4.37f) { drawContext.canvas.drawRect(Rect(-5f,-5f,1125f,750f),backCheckerPaint) }
                     }
                 }
-                drawPath(glint!!,Brush.linearGradient(
-                    0f to Color(0xffff2001),.45f to Color(0xffff1c01),1f to color,
-                    start=Offset.Zero,end=Offset(size.width*.28f,size.height*.63f)),style=Stroke(1.3.dp.toPx()))
             } else {
-                drawPath(inner,mix(color,Color.Black,.25f))
-                drawPath(inner,Color.Black,style=Stroke(1.6.dp.toPx()))
+                drawPath(ring!!,Color.Black)
+                clipPath(inner) {
+                    scale(size.width/90*.08f,size.height/60*.08f,pivot=Offset.Zero) {
+                        translate(5.11f,-2.48f) { drawContext.canvas.drawRect(Rect(-6f,-1f,1125f,753f),closeCheckerPaint) }
+                    }
+                    drawPath(inner,Brush.linearGradient(
+                        listOf(Color(0xfffe2002),Color.Transparent),
+                        start=Offset(size.width*1.55f/90,size.height*9.73f/60),
+                        end=Offset(size.width*3.71f/90,size.height*23.25f/60)),style=Stroke(3.dp.toPx()))
+                }
             }
+            val bevel=if(back)Brush.linearGradient(
+                0f to Color(0xffff2001),.45f to Color(0xffff1c01),1f to color,
+                start=Offset.Zero,end=Offset(size.width*.28f,size.height*.63f)) else Brush.linearGradient(
+                listOf(Color(0xfffe1c01),color),
+                start=Offset(size.width*8.29f/90,size.height*19.60f/60),
+                end=Offset(size.width*14.58f/90,size.height*34.48f/60))
+            drawPath(glint,bevel,style=Stroke((if(back)1.3f else 1.6f).dp.toPx()))
             if (feedback.highlight > 0f) {
                 val outset = if (feedback.release < 0) size.minDimension * .15f * Motion.pulse(feedback.seconds) else 0f
                 drawPath(headerPath(rect.inflate(2.dp.toPx()), back, outset), mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
@@ -184,14 +199,15 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     }.pointerClick(enabled, source) {
         if (!pending) { pending = true; scope.launch { delay(150); pending = false; if (currentEnabled) currentClick() } }
     }) {
-        Canvas(Modifier.fillMaxSize()) {
+        // Soften only the close mark's captured edges, preserving the plate's checker detail.
+        Canvas(Modifier.fillMaxSize().then(if(back)Modifier else Modifier.blur(.35.dp,BlurredEdgeTreatment.Unbounded))) {
             if (back) {
                 drawPath(backArrowPath(Rect(Offset.Zero,size)),mix(Color(0xffc50600),Color.Black,feedback.highlight))
             } else {
-                val start=Offset(size.width*30.9f/90,size.height*20.9f/60)
-                val end=Offset(size.width*49.1f/90,size.height*39.1f/60)
-                drawLine(Color.Black,start,end,size.width*26*.23f/90,StrokeCap.Round)
-                drawLine(Color.Black,Offset(end.x,start.y),Offset(start.x,end.y),size.width*26*.23f/90,StrokeCap.Round)
+                val start=Offset(size.width*31.117f/90,size.height*20.506f/60)
+                val end=Offset(size.width*48.883f/90,size.height*38.272f/60)
+                drawLine(Color.Black,start,end,size.width*6.601f/90,StrokeCap.Round)
+                drawLine(Color.Black,Offset(end.x,start.y),Offset(start.x,end.y),size.width*6.601f/90,StrokeCap.Round)
             }
         }
     }

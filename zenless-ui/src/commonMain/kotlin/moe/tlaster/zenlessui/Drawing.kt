@@ -67,24 +67,37 @@ internal fun DrawScope.buttonTexture() = scale(density*.08f,density*.08f,pivot=O
     translate(-55f,-24f) { drawContext.canvas.drawRect(Rect(55f,24f,55f+size.width/(density*.08f),24f+size.height/(density*.08f)),backCheckerPaint) }
 }
 
-private val headerContour by lazy {
-    val points=mutableListOf(Offset(42f,1f))
-    fun line(x:Float,y:Float) { points.add(Offset(x,y)) }
-    fun curve(a:Offset,b:Offset,c:Offset) {
-        val from=points.last()
-        for(i in 1..16) {
-            val t=i/16f;val u=1-t
-            points.add(from*(u*u*u)+a*(3*u*u*t)+b*(3*u*t*t)+c*(t*t*t))
-        }
-    }
-    line(99f,1f);curve(Offset(119f,1f),Offset(124f,10f),Offset(117f,27f));line(104f,56f)
-    curve(Offset(95f,73f),Offset(85f,79f),Offset(68f,79f));line(38f,79f)
-    curve(Offset(13f,79f),Offset(0f,59f),Offset(2f,37f))
-    curve(Offset(3f,15f),Offset(19f,1f),Offset(42f,1f))
-    points.dropLast(1)
-}
-
 // Measured in the navigation button's 90 by 60 logical coordinate space.
+private val closeOuter = floatArrayOf(
+    31.235f,0.332f,
+    46.256f,0.333f,59.491f,0.333f,74.613f,0.334f,
+    87.621f,0.332f,91.275f,10.334f,87.954f,19.498f,
+    84.094f,28.867f,81.396f,33.444f,76.569f,41.999f,
+    71.645f,52.272f,61.290f,58.306f,51.324f,58.306f,
+    43.128f,58.306f,35.912f,58.306f,28.738f,58.305f,
+    12.375f,58.305f,-0.471f,43.742f,0.308f,27.981f,
+    2.000f,10.494f,14.095f,0.331f,31.235f,0.332f,
+)
+internal val closeRing = floatArrayOf(
+    32.485f,5.458f,
+    46.467f,5.459f,58.112f,5.459f,70.939f,5.458f,
+    85.537f,5.458f,85.859f,11.710f,81.557f,21.142f,
+    78.499f,27.488f,75.852f,32.721f,72.055f,39.326f,
+    68.084f,47.575f,59.825f,53.201f,50.527f,53.201f,
+    43.251f,53.201f,37.462f,53.201f,30.076f,53.201f,
+    15.568f,53.201f,5.193f,41.623f,5.614f,28.342f,
+    7.142f,13.546f,17.439f,5.458f,32.485f,5.458f,
+)
+internal val closeFace = floatArrayOf(
+    31.334f,7.903f,
+    48.999f,7.904f,55.029f,7.904f,70.571f,7.904f,
+    81.458f,7.902f,85.543f,8.662f,78.913f,22.448f,
+    77.090f,26.503f,73.494f,32.915f,70.643f,38.146f,
+    66.063f,46.687f,59.833f,51.062f,50.507f,51.062f,
+    42.543f,51.061f,39.206f,51.061f,29.653f,51.063f,
+    16.571f,51.063f,7.699f,41.266f,7.313f,28.787f,
+    9.768f,12.544f,18.878f,7.901f,31.334f,7.903f,
+)
 private val backOuter = floatArrayOf(
     14.25f,1.02f,
     29.58f,1.02f,44.92f,1.02f,60.25f,1.02f,
@@ -107,24 +120,27 @@ private val backInner = floatArrayOf(
     7.30f,18.96f,6.02f,16.57f,6.071f,14.25f,
     6.11f,8.95f,8.92f,6.98f,13.84f,6.25f,
 )
-internal fun backPlatePath(rect: Rect, face: Boolean = false): Path = Path().apply {
-    val p=if(face)backInner else backOuter
+internal fun backPlatePath(rect: Rect, face: Boolean = false): Path = navigationPlatePath(rect,if(face)backInner else backOuter)
+internal fun navigationPlatePath(rect: Rect, p: FloatArray): Path = Path().apply {
     fun x(v:Float)=rect.left+v*rect.width/90
     fun y(v:Float)=rect.top+v*rect.height/60
     moveTo(x(p[0]),y(p[1]))
     for(i in 2 until p.size step 6) cubicTo(x(p[i]),y(p[i+1]),x(p[i+2]),y(p[i+3]),x(p[i+4]),y(p[i+5]))
     close()
 }
-private val backContour by lazy {
-    val p=backOuter
+private val backContour by lazy { navigationContour(backOuter) }
+private val closeContour by lazy { navigationContour(closeOuter) }
+private fun navigationContour(p:FloatArray):List<Offset> {
     val points=mutableListOf(Offset(p[0],p[1]))
     for(i in 2 until p.size step 6) {
         val from=points.last();val a=Offset(p[i],p[i+1]);val b=Offset(p[i+2],p[i+3]);val c=Offset(p[i+4],p[i+5])
         for(j in 1..16) { val t=j/16f;val u=1-t;points.add(from*(u*u*u)+a*(3*u*u*t)+b*(3*u*t*t)+c*(t*t*t)) }
     }
-    points.dropLast(1)
+    return points.dropLast(1)
 }
-internal val backCheckerPaint by lazy {
+internal val backCheckerPaint by lazy { navigationCheckerPaint(Color.Black,Color(0xff090909)) }
+internal val closeCheckerPaint by lazy { navigationCheckerPaint(Color(0xffc50600),Color(0xffcb1100)) }
+private fun navigationCheckerPaint(dark:Color,light:Color):Paint {
     // Bake the soft cell edges because repeated image shaders use nearest sampling on Skia.
     val tile=ImageBitmap(60,60);val canvas=Canvas(tile)
     val coverage=FloatArray(60) { i ->
@@ -133,11 +149,11 @@ internal val backCheckerPaint by lazy {
     }
     val paint=Paint().apply { isAntiAlias=false }
     for(y in 0..59)for(x in 0..59) {
-        val a=coverage[x];val b=coverage[y];val shade=(9*(a*b+(1-a)*(1-b))+.5f).toInt()
-        paint.color=Color(shade,shade,shade)
+        val a=coverage[x];val b=coverage[y]
+        paint.color=mix(dark,light,a*b+(1-a)*(1-b))
         canvas.drawRect(Rect(x.toFloat(),y.toFloat(),x+1f,y+1f),paint)
     }
-    Paint().apply { shader=ImageShader(tile,TileMode.Repeated,TileMode.Repeated) }
+    return Paint().apply { shader=ImageShader(tile,TileMode.Repeated,TileMode.Repeated) }
 }
 internal fun backArrowPath(rect:Rect):Path=Path().apply {
     fun x(v:Float)=rect.left+v*rect.width/90
@@ -160,10 +176,10 @@ internal fun backArrowPath(rect:Rect):Path=Path().apply {
 }
 
 internal fun headerPath(rect: Rect, back: Boolean, outset: Float = 0f): Path = Path().apply {
-    fun x(v: Float) = rect.left + v * rect.width / (if(back)90 else 120)
-    fun y(v: Float) = rect.top + v * rect.height / (if(back)60 else 80)
+    fun x(v: Float) = rect.left + v * rect.width / 90
+    fun y(v: Float) = rect.top + v * rect.height / 60
     if(outset!=0f) {
-        val contour=if(back)backContour else headerContour
+        val contour=if(back)backContour else closeContour
         fun point(index:Int)=contour[(index+contour.size)%contour.size].let { Offset(x(it.x),y(it.y)) }
         fun normalized(value:Offset)=value/value.getDistance().coerceAtLeast(.0001f)
         contour.indices.forEach { i ->
@@ -175,12 +191,7 @@ internal fun headerPath(rect: Rect, back: Boolean, outset: Float = 0f): Path = P
         close()
         return@apply
     }
-    if(back) { addPath(backPlatePath(rect));return@apply }
-    moveTo(x(42f), y(1f)); lineTo(x(99f), y(1f))
-    cubicTo(x(119f), y(1f), x(124f), y(10f), x(117f), y(27f)); lineTo(x(104f), y(56f))
-    cubicTo(x(95f), y(73f), x(85f), y(79f), x(68f), y(79f)); lineTo(x(38f), y(79f))
-    cubicTo(x(13f), y(79f), x(0f), y(59f), x(2f), y(37f))
-    cubicTo(x(3f), y(15f), x(19f), y(1f), x(42f), y(1f)); close()
+    addPath(navigationPlatePath(rect,if(back)backOuter else closeOuter))
 }
 
 internal fun skewTabPath(rect: Rect, outset: Float = 0f): Path = Path().apply {

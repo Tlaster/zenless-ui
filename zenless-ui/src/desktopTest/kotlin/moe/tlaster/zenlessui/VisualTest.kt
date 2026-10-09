@@ -23,6 +23,60 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class VisualTest {
+    @Test fun closeButtonAtReferenceDensity() = runDesktopComposeUiTest(width=188,height=128) {
+        mainClock.autoAdvance=false
+        var clicks=0
+        var enabled by mutableStateOf(true)
+        setContent {
+            CompositionLocalProvider(LocalDensity provides Density(2f)) {
+                Box(Modifier.requiredSize(94.dp,64.dp).background(Color.Black)) {
+                    ZenlessCloseButton({clicks++},"Close",Modifier.offset(2.dp,2.dp),enabled)
+                }
+            }
+        }
+        mainClock.advanceTimeBy(16)
+        val close=onNodeWithContentDescription("Close")
+        close.assertWidthIsEqualTo(90.dp).assertHeightIsEqualTo(60.dp)
+        val pixels=onRoot().captureToImage().toPixelMap()
+        assertEquals(Color(0xffc50600),pixels[80,12],"Reference rim red")
+        assertEquals(Color(0xffc50600),pixels[40,62],"Dark red checker cell")
+        assertEquals(Color(0xffcb1100),pixels[130,45],"Light red checker cell")
+        assertTrue(pixels[80,6].red>.95f && pixels[80,21].red>.9f,"Outer and inner upper bevels")
+        assertTrue(pixels[80,17].red<.03f,"Black separator between rim and face")
+        assertEquals(Color.Black,pixels[84,63],"The cross is black")
+        // Native reference scanlines, allowing one pixel for renderer antialiasing.
+        for((y,left,right) in listOf(Triple(10,37,172),Triple(20,23,179),Triple(35,11,181),Triple(65,5,169),Triple(95,15,152),Triple(110,30,137),Triple(118,47,120))) {
+            val ink=(0 until pixels.width).filter { pixels[it,y].red>100/255f }
+            assertTrue(kotlin.math.abs(ink.first()-left)<=1 && kotlin.math.abs(ink.last()-right)<=1,"Reference close contour at row $y")
+        }
+        for((y,left,right) in listOf(Triple(41,61,106),Triple(55,67,100),Triple(63,74,93),Triple(80,60,107),Triple(85,62,105))) {
+            val ink=(55..113).filter { pixels[it,y].red<100/255f }
+            assertTrue(kotlin.math.abs(ink.first()-left)<=1 && kotlin.math.abs(ink.last()-right)<=1,"Reference cross at row $y")
+        }
+        save("close-reference-density")
+        close.performTouchInput { down(center) }
+        mainClock.advanceTimeBy(800)
+        val held=onRoot().captureToImage().toPixelMap()
+        assertTrue(held[130,45].green>.5f,"Holding keeps the navigation highlight")
+        assertEquals(Color.Black,held[84,63],"The cross stays black while held")
+        save("close-held-reference-density")
+        close.performTouchInput { up() }
+        runOnIdle { assertEquals(0,clicks,"Activation waits for the release flash") }
+        mainClock.advanceTimeBy(240)
+        runOnIdle { assertEquals(1,clicks) }
+        assertEquals(pixels[130,45],onRoot().captureToImage().toPixelMap()[130,45],"Release restores the checker face")
+        close.performTouchInput { down(center) }
+        mainClock.advanceTimeBy(800)
+        close.performTouchInput { moveTo(androidx.compose.ui.geometry.Offset(-100f,-100f));up() }
+        mainClock.advanceTimeBy(240)
+        runOnIdle { assertEquals(1,clicks);enabled=false }
+        mainClock.advanceTimeByFrame()
+        close.assertIsNotEnabled().performTouchInput { click() }
+        mainClock.advanceTimeBy(240)
+        runOnIdle { assertEquals(1,clicks) }
+        assertEquals(pixels[130,45],onRoot().captureToImage().toPixelMap()[130,45],"Cancelled and disabled presses restore the resting face")
+    }
+
     @Test fun enabledAndDisabledLeadingButtonsAtReferenceDensity() = runDesktopComposeUiTest(width=1080,height=160) {
         mainClock.autoAdvance=false
         setContent { CompositionLocalProvider(LocalDensity provides Density(2f)) { ZenlessTheme {
@@ -155,10 +209,12 @@ class VisualTest {
         assertEquals(select[180,31],select[186,31],"The texture repeats every six units")
         save("components-calibrated")
         // Compare sampled contours; cubic getBounds also includes control points outside the curve.
-        val resting=headerPath(Rect(0f,0f,90f,60f),true,.001f).getBounds()
-        val expanded=headerPath(Rect(0f,0f,90f,60f),true,9f).getBounds()
-        assertTrue(expanded.left<resting.left-8 && expanded.right>resting.right+8)
-        assertTrue(expanded.top<resting.top-8 && expanded.bottom>resting.bottom+8)
+        for(back in listOf(true,false)) {
+            val resting=headerPath(Rect(0f,0f,90f,60f),back,.001f).getBounds()
+            val expanded=headerPath(Rect(0f,0f,90f,60f),back,9f).getBounds()
+            assertTrue(expanded.left<resting.left-8 && expanded.right>resting.right+8)
+            assertTrue(expanded.top<resting.top-8 && expanded.bottom>resting.bottom+8)
+        }
         onNodeWithContentDescription("Back").performTouchInput { down(center) }
         mainClock.advanceTimeBy(160)
         save("back-pressed")
