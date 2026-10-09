@@ -99,7 +99,7 @@ Toolchain: Compose Multiplatform 1.12.1, Kotlin 2.4.10, AGP 9.4.1, Gradle 9.8.0,
 
 Open `iosApp/iosApp.xcodeproj` on an Apple Silicon Mac and select `iosApp` and an ARM64 iPhone simulator. For devices, select your development team in Xcode. The Xcode build phase builds and links the shared Kotlin framework. No Intel simulator target is included.
 
-During UI iteration, pushes run **UI checks and Gallery**: desktop component/Gallery tests and a Web build, followed by Pages deployment. **Build and verify** is manual and uploads APK, native packages, Web assets and the simulator app, including desktop reports and Android/iOS launch screenshots. Run that full workflow before a release. See [release instructions](docs/RELEASING.md) for Maven Central.
+During UI iteration, local verification stays focused on the affected components; full local builds and waiting for CI are unnecessary. Pushes and pull requests still run the full **Build and verify** workflow, producing APK, native packages, Web assets and the simulator app, including desktop reports and Android/iOS launch screenshots. **UI checks and Gallery** independently runs desktop component/Gallery tests and a Web build, followed by Pages deployment, so the preview does not wait for all platform jobs. See [release instructions](docs/RELEASING.md) for Maven Central.
 
 ## Design and attribution
 

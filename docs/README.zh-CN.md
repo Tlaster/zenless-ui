@@ -19,6 +19,6 @@ Gallery 中可以分类浏览、操作示例、修改参数并复制对应 Kotli
 
 所有通用按钮变体与独立图标按钮共用灰色边框和文字状态：启用时白色、禁用时 `#565657`、按住时黑色。带左侧图标的 Filled 按钮保留深色底板，`tone` 选择圆形图标底座的预设颜色；禁用时底座保留变暗的原色，外壳与棋盘纹理保持不变。Alert 操作按钮直接复用带 `leadingIcon` 的 `ZenlessButton`。文字不强制斜体，并相对整个按钮居中；内部半圆环为带柔边的平整深灰色，只有按钮外沿带高光。
 
-快速调整 UI 时，推送只运行桌面组件/Gallery 测试和 Web 构建，并自动更新在线 Gallery。完整的各平台打包、Android/iOS 模拟器检查改为手动运行 **Build and verify**，发布版本前再执行。
+快速调整 UI 时，本地只做相关组件的轻量验证，不做完整构建，也不等待 CI 结束。推送和 PR 仍自动运行完整的 **Build and verify**，包括各平台打包及 Android/iOS 模拟器检查。**UI checks and Gallery** 独立运行桌面组件/Gallery 测试与 Web 构建并更新在线预览，不依赖完整平台任务结束。
 
 MIT 开源；上游版权声明见 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)。
