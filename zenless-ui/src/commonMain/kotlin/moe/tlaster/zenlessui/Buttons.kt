@@ -75,7 +75,7 @@ public fun ZenlessButton(
     content: @Composable RowScope.() -> Unit,
 ) {
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled && !loading, ambient = selected)
+    val feedback = rememberFeedback(source, false, enabled && !loading, ambient = selected, buttonFeedback = true)
     val semantic = Palette.tone(tone)
     val badgeButton = leadingIcon!=null && variant==ZenlessButtonVariant.Filled
     val colored = !badgeButton && tone !in listOf(ZenlessTone.Neutral, ZenlessTone.Accent)
@@ -124,7 +124,7 @@ public fun ZenlessButton(
 @Composable
 public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable () -> Unit) {
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled)
+    val feedback = rememberFeedback(source, false, enabled, buttonFeedback = true)
     Box(modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp).semantics { this.contentDescription = contentDescription }
         .plate(feedback,edge=Color(0xff262626),enabled=enabled,button=true).pointerClick(enabled, source, onClick = onClick).padding(9.dp), contentAlignment = Alignment.Center) {
         CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff565657),Color.Black,feedback.highlight),LocalButtonContent provides true) { content() }
@@ -148,7 +148,7 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     val currentEnabled by rememberUpdatedState(enabled)
     var pending by remember { mutableStateOf(false) }
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled)
+    val feedback = rememberFeedback(source, false, enabled, buttonFeedback = true)
     Box(modifier.size(90.dp, 60.dp).semantics { contentDescription = description }.drawWithCache {
         val rect = Rect(Offset.Zero, size)
         val path = headerPath(rect, back)

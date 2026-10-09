@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import androidx.compose.ui.text.TextLayoutResult
@@ -27,6 +28,35 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class PressedInkTest {
+    @Test fun cardsAndInputsHaveNoButtonFlash() = runDesktopComposeUiTest(width=600,height=160) {
+        mainClock.autoAdvance=false
+        setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
+            Row(Modifier.padding(16.dp),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
+                ZenlessCard(Modifier.size(90.dp,60.dp).testTag("card"),onClick={}) {}
+                ZenlessCheckbox(ToggleableState.Off,{},Modifier.testTag("checkbox"))
+                ZenlessRadioButton(false,{},Modifier.testTag("radio"))
+                ZenlessTextField("Text",{},Modifier.width(180.dp).testTag("field"),readOnly=true)
+            }
+        } } }
+        fun surface(node:SemanticsNodeInteraction):List<Color> {
+            val pixels=node.captureToImage().toPixelMap()
+            return listOf(1,minOf(20,pixels.width/2),pixels.width/2).map { pixels[it,pixels.height/2] }
+        }
+        mainClock.advanceTimeBy(200)
+        for(tag in listOf("card","checkbox","radio","field")) {
+            val control=onNodeWithTag(tag)
+            if(tag=="field") { control.performTouchInput { click() };mainClock.advanceTimeBy(240) }
+            val resting=surface(control)
+            control.performTouchInput { down(center) };mainClock.advanceTimeBy(200)
+            assertEquals(resting,surface(control),"$tag must not gain a button highlight while held")
+            control.performTouchInput { up() }
+            repeat(12) {
+                mainClock.advanceTimeByFrame()
+                assertEquals(resting,surface(control),"$tag must not flash after release")
+            }
+        }
+    }
+
     @Test fun allButtonTonesAndVariantsUseBlackTextAndCallerIconsWhileHeld() = runDesktopComposeUiTest(width=1120,height=400) {
         mainClock.autoAdvance=false
         var leadingVariant by mutableStateOf(ZenlessButtonVariant.Filled)
@@ -122,7 +152,7 @@ class PressedInkTest {
         assertEquals(Color(0xff262626),rtl[rtl.width-50,26],"The joined ring stays with the leading icon in RTL")
     }
 
-    @Test fun navigationAndSelectButtonsUseBlackInkBeforeSelectionChanges() = runDesktopComposeUiTest(width=1000,height=760) {
+    @Test fun navigationAndSelectKeepTheirInkUntilSelectionChanges() = runDesktopComposeUiTest(width=1000,height=760) {
         mainClock.autoAdvance=false
         setContent { ZenlessTheme { ZenlessOverlayHost {
             Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(24.dp)) {
@@ -139,22 +169,27 @@ class PressedInkTest {
             val button=onNodeWithText(label)
             val resting=button.ink()
             button.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
-            assertEquals(Color.Black,button.ink(),"$label held text")
+            assertEquals(if(label=="Collapse")Color.Black else resting,button.ink(),"Only the collapse action uses button press feedback")
             button.save("held-${label.replace(' ','-')}")
-            button.performTouchInput { up() };mainClock.advanceTimeBy(240)
+            button.performTouchInput { up() }
+            repeat(12) {
+                mainClock.advanceTimeByFrame()
+                if(label!="Collapse")assertEquals(resting,button.ink(),"$label must not flash after release")
+            }
+            mainClock.advanceTimeBy(240)
             assertEquals(resting,button.ink(),"$label released text")
         }
         val select=onNodeWithContentDescription("Choice")
         select.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
-        assertEquals(Color.Black,onNodeWithText("Current").ink())
+        assertEquals(Color.White,onNodeWithText("Current").ink())
         val pixels=select.captureToImage().toPixelMap()
-        assertEquals(Color.Black,pixels[pixels.width-24,pixels.height/2],"Select arrow follows its pressed text")
+        assertEquals(Color.White,pixels[pixels.width-24,pixels.height/2],"Select keeps its white arrow while pressed")
         select.save("held-select")
         select.performTouchInput { up() };mainClock.advanceTimeBy(300)
         val other=onNodeWithText("Other")
         assertEquals(Color.White,other.ink())
         other.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
-        assertEquals(Color.Black,other.ink(),"Unselected option is black before activation")
+        assertEquals(Color.White,other.ink(),"Unselected options keep their resting ink before activation")
         other.save("held-option")
         other.performTouchInput { up() };mainClock.advanceTimeBy(240)
         onNodeWithText("Other").assertDoesNotExist()

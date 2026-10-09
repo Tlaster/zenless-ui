@@ -52,10 +52,12 @@ internal class Feedback {
 }
 
 @Composable
-internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolean, enabled: Boolean, ambient: Boolean = false): Feedback {
+internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolean, enabled: Boolean, ambient: Boolean = false, buttonFeedback: Boolean = false): Feedback {
     var pressed by remember { mutableStateOf(false) }
     var releaseCount by remember { mutableIntStateOf(0) }
-    LaunchedEffect(source) {
+    LaunchedEffect(source, buttonFeedback) {
+        pressed=false
+        if (!buttonFeedback) return@LaunchedEffect
         source.interactions.collect { event -> when(event) {
             is PressInteraction.Press -> pressed=true
             is PressInteraction.Release -> { pressed=false;releaseCount++ }

@@ -92,7 +92,7 @@ public fun ZenlessNotice(message: String, modifier: Modifier = Modifier, tone: Z
 public fun ZenlessCollapse(title: String, expanded: Boolean, onExpandedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier) {
         val source=remember { MutableInteractionSource() }
-        val feedback=rememberFeedback(source,false,true)
+        val feedback=rememberFeedback(source,false,true,buttonFeedback=true)
         Row(Modifier.fillMaxWidth().heightIn(min=40.dp).background(Color.Black,RoundedCornerShape(20.dp)).drawWithCache { onDrawBehind {
             if(feedback.highlight>0f) {
                 val outset=2.dp.toPx()+if(feedback.release<0)size.minDimension*.15f*Motion.pulse(feedback.seconds) else 0f

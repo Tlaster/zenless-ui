@@ -23,7 +23,7 @@ class InteractionTest {
         val source = MutableInteractionSource()
         lateinit var feedback: Feedback
         compose.mainClock.autoAdvance = false
-        compose.setContent { feedback = rememberFeedback(source, selected = false, enabled = true) }
+        compose.setContent { feedback = rememberFeedback(source, selected = false, enabled = true, buttonFeedback = true) }
         compose.mainClock.advanceTimeByFrame()
         val press = PressInteraction.Press(Offset.Zero)
         compose.runOnIdle { source.tryEmit(press); source.tryEmit(PressInteraction.Release(press)) }
@@ -38,6 +38,35 @@ class InteractionTest {
         compose.runOnIdle { source.tryEmit(press); source.tryEmit(PressInteraction.Cancel(press)) }
         compose.mainClock.advanceTimeBy(64)
         compose.runOnIdle { assertEquals(0f, feedback.highlight, "Cancelled gestures must not flash") }
+    }
+
+    @Test fun selectionFeedbackDoesNotPulseOrFlashFromPointerEvents() {
+        val source=MutableInteractionSource()
+        lateinit var idle:Feedback
+        lateinit var selected:Feedback
+        compose.mainClock.autoAdvance=false
+        compose.setContent {
+            idle=rememberFeedback(source,selected=false,enabled=true)
+            selected=rememberFeedback(source,selected=true,enabled=true)
+        }
+        compose.mainClock.advanceTimeBy(200)
+        val press=PressInteraction.Press(Offset.Zero)
+        compose.runOnIdle { source.tryEmit(press) }
+        compose.mainClock.advanceTimeBy(800)
+        compose.runOnIdle { assertEquals(0f,idle.highlight);assertEquals(1f,selected.highlight) }
+        compose.runOnIdle { source.tryEmit(PressInteraction.Release(press)) }
+        repeat(12) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.runOnIdle {
+                assertEquals(0f,idle.highlight,"An unselected control must not flash after release")
+                assertEquals(1f,selected.highlight,"Selection must not blink off after release")
+            }
+        }
+        compose.runOnIdle { source.tryEmit(press);source.tryEmit(PressInteraction.Release(press)) }
+        repeat(12) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.runOnIdle { assertEquals(0f,idle.highlight);assertEquals(1f,selected.highlight) }
+        }
     }
 
     @Test fun controlledInputsAndDisabledButton() {
