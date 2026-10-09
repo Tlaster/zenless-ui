@@ -94,7 +94,7 @@ public fun ZenlessButton(
         CompositionLocalProvider(LocalInk provides ink, LocalButtonContent provides true, LocalTextStyle provides LocalTextStyle.current.copy(
             fontSize = if(leadingIcon!=null)(height*.46f).sp else font.sp, letterSpacing = if(leadingIcon!=null)0.sp else 1.sp,
             fontWeight=if(leadingIcon!=null)FontWeight.Bold else FontWeight.Normal)) {
-            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.padding(start=if(leadingIcon!=null)height.dp else padding.dp,end=if(leadingIcon!=null)(height/3f).dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
+            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.padding(horizontal=if(leadingIcon!=null)height.dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
             if(leadingIcon!=null) Box(Modifier.matchParentSize().graphicsLayer { alpha=if(loading)0f else 1f },contentAlignment=Alignment.CenterStart) {
                 val badge=when(tone) { ZenlessTone.Neutral->Color.White;ZenlessTone.Danger->Color(0xffff2b00);ZenlessTone.Warning->Color(0xffffb000);else->semantic }
                 Box(Modifier.fillMaxHeight().aspectRatio(58.5f/58f).drawWithCache {
@@ -111,7 +111,7 @@ public fun ZenlessButton(
                         if(rest>0f) {
                             drawContext.canvas.saveLayer(Rect(Offset.Zero,this.size),Paint().apply { alpha=rest })
                             if(variant!=ZenlessButtonVariant.Filled)clipPath(face) { drawRect(Color.Black);buttonTexture() }
-                            clipRect(left=this.size.width/2,top=bounds.top+inset,bottom=bounds.bottom-inset) {
+                            clipRect(left=this.size.width/2,top=2.25.dp.toPx()) {
                                 rings.forEach { (path,alpha) -> drawPath(path,edge.copy(alpha=alpha)) }
                             }
                             drawContext.canvas.restore()

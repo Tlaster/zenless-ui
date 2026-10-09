@@ -36,6 +36,8 @@ class VisualTest {
         } } }
         mainClock.advanceTimeBy(16)
         val disabled=onNodeWithTag("disabled-leading");val enabled=onNodeWithTag("enabled-leading")
+        val label=onNodeWithText("继续操作",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
+        assertTrue(kotlin.math.abs(label.center.x-enabled.fetchSemanticsNode().boundsInRoot.center.x)<=1,"The label is centered in the whole button")
         val off=disabled.captureToImage().toPixelMap();val on=enabled.captureToImage().toPixelMap()
         assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
         assertEquals(Color(0xff3d3d3d),on[300,2],"The upper bevel keeps the reference brightness")
