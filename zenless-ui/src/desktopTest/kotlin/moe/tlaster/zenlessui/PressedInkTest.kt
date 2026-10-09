@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import org.jetbrains.skia.Image
 import org.junit.Test
 import java.io.File
@@ -28,7 +30,9 @@ class PressedInkTest {
     @Test fun allButtonTonesAndVariantsUseBlackTextAndCallerIconsWhileHeld() = runDesktopComposeUiTest(width=1120,height=400) {
         mainClock.autoAdvance=false
         var leadingVariant by mutableStateOf(ZenlessButtonVariant.Filled)
-        setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
+        var leadingRound by mutableStateOf(true)
+        var direction by mutableStateOf(LayoutDirection.Ltr)
+        setContent { CompositionLocalProvider(LocalDensity provides Density(1f),LocalLayoutDirection provides direction) { ZenlessTheme {
             Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
                 ZenlessButtonVariant.entries.forEach { variant -> Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     ZenlessTone.entries.forEach { tone ->
@@ -49,7 +53,7 @@ class PressedInkTest {
                         Canvas(Modifier.size(20.dp)) { drawRect(ink) }
                     }
                     ZenlessButton({error("Disabled button activated")},Modifier.testTag("disabled"),enabled=false) { ZenlessText("Disabled",style=ZenlessTextStyle.Caption) }
-                    ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Extra,variant=leadingVariant,leadingIcon={
+                    ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Extra,variant=leadingVariant,round=leadingRound,leadingIcon={
                         val ink=zenlessContentColor
                         Canvas(Modifier.size(12.dp).testTag("leading-glyph")) { drawRect(ink) }
                     }) { ZenlessText("Leading") }
@@ -111,6 +115,11 @@ class PressedInkTest {
             val pixels=leading.captureToImage().toPixelMap()
             assertTrue(pixels[22,8].red<=9/255f,"$variant preserves the dark leading disc")
         }
+        runOnIdle { leadingVariant=ZenlessButtonVariant.Filled;leadingRound=false };mainClock.advanceTimeBy(16)
+        assertTrue(leading.captureToImage().toPixelMap()[6,6].red<=9/255f,"Square buttons retain their face outside the leading disc")
+        runOnIdle { leadingRound=true;direction=LayoutDirection.Rtl };mainClock.advanceTimeBy(16)
+        val rtl=leading.captureToImage().toPixelMap()
+        assertEquals(Color(0xff262626),rtl[rtl.width-50,26],"The joined ring stays with the leading icon in RTL")
     }
 
     @Test fun navigationAndSelectButtonsUseBlackInkBeforeSelectionChanges() = runDesktopComposeUiTest(width=1000,height=760) {

@@ -30,16 +30,17 @@ internal fun Modifier.pointerClick(enabled: Boolean, source: MutableInteractionS
 internal fun Modifier.plate(
     feedback: Feedback, fill: Color = Color.Black, edge: Color = Color(0xff333333),
     round: Boolean = true, pattern: Boolean = true, expand: Boolean = true, highlightFill: Boolean = true,
-    enabled: Boolean = true, input: Boolean = false, button: Boolean = false,
+    enabled: Boolean = true, input: Boolean = false, button: Boolean = false, leading: Boolean = false,
 ): Modifier = onGloballyPositioned { feedback.visible = !it.boundsInWindow().isEmpty }.drawWithCache {
     val radius = if (round) size.minDimension / 2 else 6.dp.toPx()
     val faceInset = (if (input || !enabled) 4 else 5).dp.toPx()
     val face = roundedPath(Rect(Offset.Zero,size).deflate(faceInset), radius - faceInset)
     val checks = checkerPaint(mix(fill, Color.White, if (!enabled && input) .02f else .06f))
+    val buttonDrawing=if(button)buttonShell(fill,edge,round,pattern,leading) else null
     onDrawBehind {
         if(button) {
             drawPath(roundedPath(Rect(Offset.Zero,size),radius),Color.Black)
-            buttonShell(fill,edge,round,pattern)
+            buttonDrawing!!()
         } else {
             layeredPlate(fill, edge, radius, faceInset, !input && enabled)
             if(pattern)clipPath(face) { translate(faceInset,faceInset) { checker(checks,size.width-2*faceInset,size.height-2*faceInset) } }
@@ -89,7 +90,7 @@ public fun ZenlessButton(
     val padding = when (size) { ZenlessSize.Mini -> 17; ZenlessSize.Small -> 23; ZenlessSize.Default -> 29; ZenlessSize.Large -> 47; ZenlessSize.Extra -> 59 }
     val font = when (size) { ZenlessSize.Mini, ZenlessSize.Small -> 12; ZenlessSize.Default -> 14; ZenlessSize.Large -> 16; ZenlessSize.Extra -> 18 }
     Box(modifier.heightIn(min = height.dp).semantics { this.selected = selected; if (loading) progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }
-        .plate(feedback, fill, edge, round, enabled = enabled && !loading,button=true).drawWithCache { onDrawBehind {
+        .plate(feedback, fill, edge, round, enabled = enabled && !loading,button=true,leading=leadingIcon!=null && !loading).drawWithCache { onDrawBehind {
             if(selected && enabled && !loading && !feedback.active)drawPath(roundedPath(Rect(Offset.Zero,this.size).deflate(2.5.dp.toPx()),(if(round)this.size.minDimension/2 else 6.dp.toPx())-2.5.dp.toPx()),mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),style=Stroke(3.dp.toPx()))
         }}.pointerClick(enabled && !loading, source, onClick = onClick),
         contentAlignment = Alignment.Center) {
@@ -100,24 +101,7 @@ public fun ZenlessButton(
             if(leadingIcon!=null) Box(Modifier.matchParentSize().graphicsLayer { alpha=if(loading)0f else 1f },contentAlignment=Alignment.CenterStart) {
                 val badge=when(tone) { ZenlessTone.Neutral->Color.White;ZenlessTone.Danger->Color(0xffff2b00);ZenlessTone.Warning->Color(0xffffb000);else->semantic }
                 Box(Modifier.fillMaxHeight().aspectRatio(58.5f/58f).drawWithCache {
-                    val bounds=Rect(.5.dp.toPx(),.5.dp.toPx(),this.size.width-.5.dp.toPx(),this.size.height)
-                    val inset=this.size.minDimension*.0835f
-                    val face=Path().apply { addOval(bounds.deflate(inset)) }
-                    val rings=listOf(.6f to .12f,.3f to .32f,0f to .7f,-.3f to 1f).map { (spread,alpha) ->
-                        val offset=spread.dp.toPx()
-                        Path().apply { fillType=PathFillType.EvenOdd;addOval(bounds.inflate(offset));addOval(bounds.deflate(inset+offset)) } to alpha
-                    }
                     onDrawBehind {
-                        val rest=1-feedback.highlight
-                        // The interior half-ring is flat; the button body owns the exterior bevel.
-                        if(rest>0f) {
-                            drawContext.canvas.saveLayer(Rect(Offset.Zero,this.size),Paint().apply { alpha=rest })
-                            if(variant!=ZenlessButtonVariant.Filled)clipPath(face) { drawRect(Color.Black);buttonTexture() }
-                            clipRect(left=this.size.width/2,top=2.25.dp.toPx()) {
-                                rings.forEach { (path,alpha) -> drawPath(path,edge.copy(alpha=alpha)) }
-                            }
-                            drawContext.canvas.restore()
-                        }
                         drawCircle(mix(if(enabled)badge else mix(Color.Black,badge,.353f),Color.Black,feedback.highlight),radius=this.size.minDimension*.28f)
                     }
                 },contentAlignment=Alignment.Center) {

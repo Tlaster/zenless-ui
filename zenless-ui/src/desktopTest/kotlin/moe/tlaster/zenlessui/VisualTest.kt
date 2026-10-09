@@ -89,6 +89,7 @@ class VisualTest {
             }
         } } }
         mainClock.advanceTimeBy(16)
+        save("button-states-calibrated")
         val disabled=onNodeWithTag("disabled-leading");val enabled=onNodeWithTag("enabled-leading")
         val label=onNodeWithText("继续操作",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
         assertTrue(kotlin.math.abs(label.center.x-enabled.fetchSemanticsNode().boundsInRoot.center.x)<=1,"The label is centered in the whole button")
@@ -96,6 +97,10 @@ class VisualTest {
         assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
         assertEquals(Color(0xff3d3d3d),on[300,2],"The upper bevel keeps the reference brightness")
         assertEquals(Color(0xff262626),on[90,15],"The interior arc has no second bevel")
+        for(y in (5..9)+(107..112))for(x in 70..104) {
+            assertEquals(Color(0xff262626),on[x,y],"The circular and outer borders form one solid join at $x,$y")
+            assertEquals(on[x,y],off[x,y],"Disabled junctions use the same silhouette")
+        }
         for((x,value) in listOf(114 to 38,115 to 33,116 to 13))assertTrue(kotlin.math.abs(on[x,58].red*255-value)<=1,"Soft inner-ring edge at $x")
         for((y,left,right) in listOf(Triple(11,24,462),Triple(21,13,472),Triple(41,3,483),Triple(58,1,486),Triple(91,11,475),Triple(111,35,452))) {
             val edge=(0 until on.width).filter { on[it,y].red>15/255f }
@@ -104,7 +109,6 @@ class VisualTest {
         assertEquals(Color(0xffff2b00),on[58,32],"Enabled badge red")
         assertEquals(Color(0xff5a3e00),off[58,32],"Disabled badge keeps its dim amber")
         for(y in 14..24)for(x in 270..360)assertEquals(on[x,y],off[x,y],"The same texture remains visible")
-        save("button-states-calibrated")
         disabled.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
         assertEquals(off[58,32],disabled.captureToImage().toPixelMap()[58,32],"A disabled badge never pulses")
         disabled.performTouchInput { up() }
