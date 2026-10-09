@@ -59,10 +59,12 @@ internal fun DrawScope.buttonShell(fill:Color,edge:Color,round:Boolean,pattern:B
         0f to Color(0xff3d3d3d),(if(circular).6f else .67f) to Color(0xff3d3d3d),1f to edge,
         end=Offset(size.width*(if(circular).22f else .0265f),size.height*.672f)),style=Stroke(1.6.dp.toPx()))
     if(pattern)clipPath(face) {
-        if(fill==Color.Black)scale(density*.08f,density*.08f,pivot=Offset.Zero) {
-            translate(-55f,-24f) { drawContext.canvas.drawRect(Rect(55f,24f,55f+size.width/(density*.08f),24f+size.height/(density*.08f)),backCheckerPaint) }
-        } else checker(checkerPaint(mix(fill,Color.White,.06f)))
+        if(fill==Color.Black)buttonTexture() else checker(checkerPaint(mix(fill,Color.White,.06f)))
     }
+}
+
+internal fun DrawScope.buttonTexture() = scale(density*.08f,density*.08f,pivot=Offset.Zero) {
+    translate(-55f,-24f) { drawContext.canvas.drawRect(Rect(55f,24f,55f+size.width/(density*.08f),24f+size.height/(density*.08f)),backCheckerPaint) }
 }
 
 private val headerContour by lazy {

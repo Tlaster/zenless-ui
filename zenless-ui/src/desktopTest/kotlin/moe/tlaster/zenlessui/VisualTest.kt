@@ -39,6 +39,8 @@ class VisualTest {
         val off=disabled.captureToImage().toPixelMap();val on=enabled.captureToImage().toPixelMap()
         assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
         assertEquals(Color(0xff3d3d3d),on[300,2],"The upper bevel keeps the reference brightness")
+        assertEquals(Color(0xff262626),on[90,15],"The interior arc has no second bevel")
+        for((x,value) in listOf(114 to 38,115 to 33,116 to 13))assertTrue(kotlin.math.abs(on[x,58].red*255-value)<=1,"Soft inner-ring edge at $x")
         for((y,left,right) in listOf(Triple(11,24,462),Triple(21,13,472),Triple(41,3,483),Triple(58,1,486),Triple(91,11,475),Triple(111,35,452))) {
             val edge=(0 until on.width).filter { on[it,y].red>15/255f }
             assertTrue(kotlin.math.abs(edge.first()-left)<=1 && kotlin.math.abs(edge.last()-right)<=1,"Reference shell contour at row $y")

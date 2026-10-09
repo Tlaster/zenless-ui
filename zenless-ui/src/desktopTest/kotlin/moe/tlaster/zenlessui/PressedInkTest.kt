@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import org.jetbrains.skia.Image
@@ -26,6 +27,7 @@ import kotlin.test.assertTrue
 class PressedInkTest {
     @Test fun allButtonTonesAndVariantsUseBlackTextAndCallerIconsWhileHeld() = runDesktopComposeUiTest(width=1120,height=400) {
         mainClock.autoAdvance=false
+        var leadingVariant by mutableStateOf(ZenlessButtonVariant.Filled)
         setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
             Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
                 ZenlessButtonVariant.entries.forEach { variant -> Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -47,7 +49,7 @@ class PressedInkTest {
                         Canvas(Modifier.size(20.dp)) { drawRect(ink) }
                     }
                     ZenlessButton({error("Disabled button activated")},Modifier.testTag("disabled"),enabled=false) { ZenlessText("Disabled",style=ZenlessTextStyle.Caption) }
-                    ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Extra,leadingIcon={
+                    ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Extra,variant=leadingVariant,leadingIcon={
                         val ink=zenlessContentColor
                         Canvas(Modifier.size(12.dp).testTag("leading-glyph")) { drawRect(ink) }
                     }) { ZenlessText("Leading") }
@@ -87,6 +89,9 @@ class PressedInkTest {
         assertEquals(disabledInk,disabled.ink())
         disabled.performTouchInput { up() }
         val leading=onNodeWithTag("leading-button")
+        val leadingText=mutableListOf<TextLayoutResult>()
+        onNodeWithText("Leading").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(leadingText) }
+        assertTrue(leadingText.single().layoutInput.style.fontStyle!=FontStyle.Italic,"Buttons do not force italic text")
         val glyph=onNodeWithTag("leading-glyph",useUnmergedTree=true)
         leading.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
         assertEquals(Color.Black,onNodeWithText("Leading").ink())
@@ -101,6 +106,11 @@ class PressedInkTest {
         assertEquals(plate[plate.width-12,plate.height/2],glyph.centerPixel(),"Leading glyph stays in phase")
         leading.performTouchInput { up() };mainClock.advanceTimeBy(240)
         assertEquals(Color.Black,glyph.centerPixel())
+        for(variant in listOf(ZenlessButtonVariant.Plain,ZenlessButtonVariant.Hollow)) {
+            runOnIdle { leadingVariant=variant };mainClock.advanceTimeBy(16)
+            val pixels=leading.captureToImage().toPixelMap()
+            assertTrue(pixels[22,8].red<=9/255f,"$variant preserves the dark leading disc")
+        }
     }
 
     @Test fun navigationAndSelectButtonsUseBlackInkBeforeSelectionChanges() = runDesktopComposeUiTest(width=1000,height=760) {

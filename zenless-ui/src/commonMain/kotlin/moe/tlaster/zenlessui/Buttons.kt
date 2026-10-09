@@ -17,7 +17,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -94,19 +93,32 @@ public fun ZenlessButton(
         contentAlignment = Alignment.Center) {
         CompositionLocalProvider(LocalInk provides ink, LocalButtonContent provides true, LocalTextStyle provides LocalTextStyle.current.copy(
             fontSize = if(leadingIcon!=null)(height*.46f).sp else font.sp, letterSpacing = if(leadingIcon!=null)0.sp else 1.sp,
-            fontWeight=if(leadingIcon!=null)FontWeight.Bold else FontWeight.Normal,fontStyle=if(leadingIcon!=null)FontStyle.Italic else FontStyle.Normal)) {
+            fontWeight=if(leadingIcon!=null)FontWeight.Bold else FontWeight.Normal)) {
             Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.padding(start=if(leadingIcon!=null)height.dp else padding.dp,end=if(leadingIcon!=null)(height/3f).dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
             if(leadingIcon!=null) Box(Modifier.matchParentSize().graphicsLayer { alpha=if(loading)0f else 1f },contentAlignment=Alignment.CenterStart) {
                 val badge=when(tone) { ZenlessTone.Neutral->Color.White;ZenlessTone.Danger->Color(0xffff2b00);ZenlessTone.Warning->Color(0xffffb000);else->semantic }
-                Box(Modifier.fillMaxHeight().aspectRatio(58.5f/58f).drawWithCache { onDrawBehind {
-                    val rest=1-feedback.highlight
-                    if(rest>0f) {
-                        drawContext.canvas.saveLayer(Rect(Offset.Zero,this.size),Paint().apply { alpha=rest })
-                        buttonShell(Color.Black,edge,true,true)
-                        drawContext.canvas.restore()
+                Box(Modifier.fillMaxHeight().aspectRatio(58.5f/58f).drawWithCache {
+                    val bounds=Rect(.5.dp.toPx(),.5.dp.toPx(),this.size.width-.5.dp.toPx(),this.size.height)
+                    val inset=this.size.minDimension*.0835f
+                    val face=Path().apply { addOval(bounds.deflate(inset)) }
+                    val rings=listOf(.6f to .12f,.3f to .32f,0f to .7f,-.3f to 1f).map { (spread,alpha) ->
+                        val offset=spread.dp.toPx()
+                        Path().apply { fillType=PathFillType.EvenOdd;addOval(bounds.inflate(offset));addOval(bounds.deflate(inset+offset)) } to alpha
                     }
-                    drawCircle(mix(if(enabled)badge else mix(Color.Black,badge,.353f),Color.Black,feedback.highlight),radius=this.size.minDimension*.28f)
-                } },contentAlignment=Alignment.Center) {
+                    onDrawBehind {
+                        val rest=1-feedback.highlight
+                        // The interior half-ring is flat; the button body owns the exterior bevel.
+                        if(rest>0f) {
+                            drawContext.canvas.saveLayer(Rect(Offset.Zero,this.size),Paint().apply { alpha=rest })
+                            if(variant!=ZenlessButtonVariant.Filled)clipPath(face) { drawRect(Color.Black);buttonTexture() }
+                            clipRect(left=this.size.width/2,top=bounds.top+inset,bottom=bounds.bottom-inset) {
+                                rings.forEach { (path,alpha) -> drawPath(path,edge.copy(alpha=alpha)) }
+                            }
+                            drawContext.canvas.restore()
+                        }
+                        drawCircle(mix(if(enabled)badge else mix(Color.Black,badge,.353f),Color.Black,feedback.highlight),radius=this.size.minDimension*.28f)
+                    }
+                },contentAlignment=Alignment.Center) {
                     CompositionLocalProvider(LocalInk provides mix(Color.Black,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)) { leadingIcon() }
                 }
             }
