@@ -17,12 +17,15 @@ import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 internal fun Modifier.pointerClick(enabled: Boolean, source: MutableInteractionSource, role: Role = Role.Button, onClick: () -> Unit) =
     focusProperties { canFocus = false }.clickable(source, indication = null, enabled = enabled, role = role, onClick = onClick)
@@ -93,11 +96,14 @@ public fun ZenlessButton(
         .plate(feedback, fill, edge, round, enabled = enabled && !loading,button=true,leading=leadingIcon!=null && !loading).drawWithCache { onDrawBehind {
             if(selected && enabled && !loading && !feedback.active)drawPath(roundedPath(Rect(Offset.Zero,this.size).deflate(2.5.dp.toPx()),(if(round)this.size.minDimension/2 else 6.dp.toPx())-2.5.dp.toPx()),mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),style=Stroke(3.dp.toPx()))
         }}.pointerClick(enabled && !loading, source, onClick = onClick),
-        contentAlignment = Alignment.Center) {
+        contentAlignment = Alignment.Center, propagateMinConstraints = true) {
         CompositionLocalProvider(LocalInk provides ink, LocalButtonContent provides true, LocalTextStyle provides LocalTextStyle.current.copy(
-            fontSize = if(leadingIcon!=null)(height*.46f).sp else font.sp, letterSpacing = if(leadingIcon!=null)0.sp else 1.sp,
-            fontWeight=if(leadingIcon!=null)FontWeight.Bold else FontWeight.Normal)) {
-            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.padding(horizontal=if(leadingIcon!=null)height.dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
+            fontSize = font.sp, letterSpacing = 1.sp, fontWeight = FontWeight.Normal)) {
+            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.layout { measurable, constraints ->
+                val leadingWidth = if(leadingIcon!=null)(constraints.minHeight * 58.5f / 58f).roundToInt() else 0
+                val body = measurable.measure(constraints.offset(horizontal = -leadingWidth))
+                layout(body.width + leadingWidth, body.height) { body.placeRelative(leadingWidth, 0) }
+            }.padding(horizontal=if(leadingIcon!=null)12.dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
             if(leadingIcon!=null) Box(Modifier.matchParentSize().graphicsLayer { alpha=if(loading)0f else 1f },contentAlignment=Alignment.CenterStart) {
                 val badge=when(tone) { ZenlessTone.Neutral->Color.White;ZenlessTone.Danger->Color(0xffff2b00);ZenlessTone.Warning->Color(0xffffb000);else->semantic }
                 Box(Modifier.fillMaxHeight().aspectRatio(58.5f/58f).drawWithCache {

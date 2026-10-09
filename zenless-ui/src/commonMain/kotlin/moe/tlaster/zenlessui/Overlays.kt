@@ -292,8 +292,8 @@ public fun ZenlessAlert(
                     CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=26.sp,lineHeight=36.sp,textAlign=TextAlign.Center)) { ZenlessText(message,Modifier.fillMaxWidth()) }
                 }
                 Row(Modifier.align(Alignment.BottomCenter).offset(y=28.dp).graphicsLayer { alpha=frame.ink;translationY=(-9).dp.toPx()*(1-frame.ink) },horizontalArrangement=Arrangement.spacedBy(26.dp)) {
-                    if(cancelText!=null && onDismissRequest!=null)AlertAction(cancelText,false,ready,actionWidth,narrow) {close(onDismissRequest)}
-                    AlertAction(confirmText,true,ready,actionWidth,narrow) {close {currentConfirm()}}
+                    if(cancelText!=null && onDismissRequest!=null)AlertAction(cancelText,false,ready,actionWidth) {close(onDismissRequest)}
+                    AlertAction(confirmText,true,ready,actionWidth) {close {currentConfirm()}}
                 }
             }
         }
@@ -301,12 +301,12 @@ public fun ZenlessAlert(
 }
 
 @Composable
-private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,narrow:Boolean,onClick:()->Unit) {
+private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,onClick:()->Unit) {
     ZenlessButton(onClick,Modifier.width(width).heightIn(min=56.dp),
         tone=if(confirm)ZenlessTone.Success else ZenlessTone.Danger,size=ZenlessSize.Extra,enabled=enabled,
         leadingIcon={Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp))},
     ) {
-        CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=if(narrow)16.sp else 24.sp)) { ZenlessText(text,maxLines=1) }
+        ZenlessText(text,maxLines=1)
     }
 }
 
