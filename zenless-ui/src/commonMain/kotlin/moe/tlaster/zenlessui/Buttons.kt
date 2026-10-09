@@ -1,9 +1,11 @@
 package moe.tlaster.zenlessui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +51,7 @@ internal fun Modifier.plate(
     }
 }
 
-/** A fixed-palette button. Supply business icons through [content]. */
+/** A fixed-palette button. Supply business icons through [leadingIcon] or [content]. */
 @Composable
 public fun ZenlessButton(
     onClick: () -> Unit,
@@ -61,6 +63,7 @@ public fun ZenlessButton(
     loading: Boolean = false,
     selected: Boolean = false,
     round: Boolean = true,
+    leadingIcon: (@Composable () -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     val source = remember { MutableInteractionSource() }
@@ -94,8 +97,14 @@ public fun ZenlessButton(
             if(selected && enabled && !loading && !feedback.active)drawPath(roundedPath(Rect(Offset.Zero,this.size).deflate(2.5.dp.toPx()),(if(round)this.size.minDimension/2 else 6.dp.toPx())-2.5.dp.toPx()),mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),style=Stroke(3.dp.toPx()))
         }}.pointerClick(enabled && !loading, source, onClick = onClick).padding(horizontal = padding.dp),
         contentAlignment = Alignment.Center) {
-        CompositionLocalProvider(LocalInk provides ink, LocalTextStyle provides LocalTextStyle.current.copy(fontSize = font.sp, letterSpacing = 1.sp)) {
-            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically, content = content)
+        CompositionLocalProvider(LocalInk provides ink, LocalButtonHighlight provides feedback.highlight, LocalTextStyle provides LocalTextStyle.current.copy(fontSize = font.sp, letterSpacing = 1.sp)) {
+            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                if(leadingIcon!=null) Box(Modifier.size((height*.57f).dp).background(Color.Black,CircleShape),contentAlignment=Alignment.Center) {
+                    val iconInk=mix(if(enabled)Color.White else Palette.muted,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)
+                    CompositionLocalProvider(LocalInk provides iconInk,LocalButtonHighlight provides 0f) { leadingIcon() }
+                }
+                content()
+            }
             if (loading) ZenlessSpinner(Modifier.matchParentSize())
         }
     }
@@ -107,7 +116,7 @@ public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, mo
     val feedback = rememberFeedback(source, false, enabled)
     Box(modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp).semantics { this.contentDescription = contentDescription }
         .plate(feedback, enabled = enabled).pointerClick(enabled, source, onClick = onClick).padding(9.dp), contentAlignment = Alignment.Center) {
-        CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Palette.muted,Color.Black,feedback.highlight)) { content() }
+        CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Palette.muted,Color.Black,feedback.highlight),LocalButtonHighlight provides feedback.highlight) { content() }
     }
 }
 
@@ -160,7 +169,7 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     }) {
         Canvas(Modifier.fillMaxSize()) {
             if (back) {
-                drawPath(backArrowPath(Rect(Offset.Zero,size)),Color(0xffc50600))
+                drawPath(backArrowPath(Rect(Offset.Zero,size)),mix(Color(0xffc50600),Color.Black,feedback.highlight))
             } else {
                 val start=Offset(size.width*30.9f/90,size.height*20.9f/60)
                 val end=Offset(size.width*49.1f/90,size.height*39.1f/60)

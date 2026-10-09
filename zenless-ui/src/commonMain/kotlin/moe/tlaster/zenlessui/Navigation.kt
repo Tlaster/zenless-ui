@@ -38,7 +38,6 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
         items.forEachIndexed { index, title ->
             val selected=selectedIndex==index
             val source=remember { MutableInteractionSource() }
-            val pressed by source.collectIsPressedAsState()
             val hovered by source.collectIsHoveredAsState()
             val feedback=rememberFeedback(source,selected && !folder,true)
             val rise by animateFloatAsState(if(selected)0f else 7f,tween(160,easing=CubicBezierEasing(0f,0f,.58f,1f)))
@@ -58,24 +57,24 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
                                 }
                                 drawPath(motif,Color.White.copy(alpha=.045f))
                                 drawRect(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.8f)),startY=size.height-12.dp.toPx(),endY=size.height))
-                                if(pressed)drawRect(Color.Black.copy(alpha=.18f))
+                                if(feedback.highlight>0f)drawRect(mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
                                 else if(hovered && !selected)drawRect(Color.White.copy(alpha=.025f))
                             }
                             drawPath(shape,Color.Black,style=Stroke(2.5.dp.toPx()))
                             val lip=Path().apply {addRoundRect(RoundRect(rect.deflate(3.dp.toPx()),CornerRadius(15.dp.toPx()),CornerRadius(15.dp.toPx()),CornerRadius.Zero,CornerRadius.Zero))}
                             clipRect(bottom=top+22.dp.toPx()) { drawPath(lip,Brush.verticalGradient(listOf(Color.White.copy(alpha=.12f),Color.Transparent),startY=top,endY=top+22.dp.toPx()),style=Stroke(2.dp.toPx())) }
-                        } else if(selected) {
-                            val outset=size.minDimension*.15f*Motion.pulse(feedback.seconds)
+                        } else if(feedback.highlight>0f) {
+                            val outset=if(feedback.release<0)size.minDimension*.15f*Motion.pulse(feedback.seconds) else 0f
                             scale(density,density,pivot=Offset.Zero) {
-                                drawPath(skewTabPath(Rect(-1f,-1f,size.width/density+1,size.height/density+1),outset/density),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)))
+                                drawPath(skewTabPath(Rect(-1f,-1f,size.width/density+1,size.height/density+1),outset/density),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
                             }
                         }
                     }
                 }.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }
                 .padding(horizontal=if(folder)12.dp else 20.dp).padding(top=if(folder)rise.dp else 0.dp),contentAlignment=Alignment.Center) {
                 val style=LocalTextStyle.current.copy(fontSize=if(folder)28.sp else 14.sp,letterSpacing=0.sp,
-                    fontWeight=if(folder)FontWeight.Bold else FontWeight.Normal,color=if(folder)mix(Color(0xffb7b8b8),Color.Black,emphasis) else if(selected)Color.Black else Color.White)
-                if(folder && emphasis<1f) BasicText(title,modifier=Modifier.clearAndSetSemantics {},style=style.copy(color=Color.Black.copy(alpha=1-emphasis),drawStyle=Stroke(outlineWidth)),maxLines=1,overflow=TextOverflow.Ellipsis)
+                    fontWeight=if(folder)FontWeight.Bold else FontWeight.Normal,color=mix(if(folder)mix(Color(0xffb7b8b8),Color.Black,emphasis) else if(selected)Color.Black else Color.White,Color.Black,feedback.highlight))
+                if(folder && emphasis<1f) BasicText(title,modifier=Modifier.clearAndSetSemantics {},style=style.copy(color=Color.Black.copy(alpha=(1-emphasis)*(1-feedback.highlight)),drawStyle=Stroke(outlineWidth)),maxLines=1,overflow=TextOverflow.Ellipsis)
                 BasicText(title,style=style,maxLines=1,overflow=TextOverflow.Ellipsis)
             }
         }
@@ -94,9 +93,9 @@ public fun ZenlessNavigation(items: List<String>, selectedIndex: Int, onSelected
                 Box(Modifier.fillMaxWidth().heightIn(min=46.dp).semantics { this.selected=selected }
                     .drawWithCache { onDrawBehind {
                         drawLine(Color(0xff181818),Offset(0f,size.height-1.5.dp.toPx()),Offset(size.width,size.height-1.5.dp.toPx()),3.dp.toPx())
-                        if(selected)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),cornerRadius=CornerRadius(6.dp.toPx()))
+                        if(feedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)).copy(alpha=feedback.highlight),cornerRadius=CornerRadius(6.dp.toPx()))
                     }}.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }.padding(horizontal=20.dp,vertical=6.dp),contentAlignment=Alignment.CenterStart) {
-                    CompositionLocalProvider(LocalInk provides if(selected)Color.Black else Color.White,LocalTextStyle provides LocalTextStyle.current.copy(fontSize=14.sp)) { ZenlessText(text,maxLines=1) }
+                    CompositionLocalProvider(LocalInk provides mix(if(selected)Color.Black else Color.White,Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=14.sp)) { ZenlessText(text,maxLines=1) }
                 }
             }
         }

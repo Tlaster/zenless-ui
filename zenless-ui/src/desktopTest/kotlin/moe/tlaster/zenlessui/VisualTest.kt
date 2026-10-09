@@ -44,6 +44,20 @@ class VisualTest {
             assertTrue(kotlin.math.abs(ink.first()-left)<=1 && kotlin.math.abs(ink.last()-right)<=1,"Reference contour at row $y")
         }
         save("back-reference-density")
+        val back=onNodeWithContentDescription("Back")
+        back.performTouchInput { down(center) }
+        mainClock.advanceTimeBy(800)
+        assertEquals(Color.Black,onRoot().captureToImage().toPixelMap()[100,45],"Held arrow matches the black reference ink")
+        save("back-held-reference-density")
+        back.performTouchInput { up() }
+        mainClock.advanceTimeBy(240)
+        assertEquals(red,onRoot().captureToImage().toPixelMap()[100,45],"Resting red returns after the release flash")
+        back.performTouchInput { down(center) }
+        mainClock.advanceTimeBy(800)
+        back.performTouchInput { moveTo(androidx.compose.ui.geometry.Offset(-100f,-100f)) }
+        mainClock.advanceTimeBy(64)
+        assertEquals(red,onRoot().captureToImage().toPixelMap()[100,45],"Cancelled presses restore resting ink")
+        back.performTouchInput { up() }
     }
 
     @Test fun overlayGeometryAndDrawerScrollbar() = runDesktopComposeUiTest(width=1024,height=768) {
@@ -111,6 +125,8 @@ class VisualTest {
         onNodeWithContentDescription("Back").performTouchInput { down(center) }
         mainClock.advanceTimeBy(160)
         save("back-pressed")
+        mainClock.advanceTimeBy(640)
+        save("back-held")
         onNodeWithContentDescription("Back").performTouchInput { up() }
     }
 

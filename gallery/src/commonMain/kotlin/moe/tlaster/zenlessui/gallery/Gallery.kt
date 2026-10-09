@@ -160,18 +160,29 @@ public fun GalleryApp() {
 internal fun quote(value: String): String = buildString {
     append('"'); value.forEach { when (it) { '\\' -> append("\\\\"); '"' -> append("\\\""); '\n' -> append("\\n"); '\r' -> append("\\r"); '\t' -> append("\\t"); '$' -> append("\\$"); else -> append(it) } }; append('"')
 }
-internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, variant: ZenlessButtonVariant, enabled: Boolean, loading: Boolean, selected: Boolean, round: Boolean) =
-    "ZenlessButton(\n    onClick = { /* handle action */ },\n    tone = ZenlessTone.${tone.name},\n    size = ZenlessSize.${size.name},\n    variant = ZenlessButtonVariant.${variant.name},\n    enabled = $enabled, loading = $loading,\n    selected = $selected, round = $round,\n) {\n    ZenlessText(${quote(text)})\n}"
+internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, variant: ZenlessButtonVariant, enabled: Boolean, loading: Boolean, selected: Boolean, round: Boolean, leadingIcon: Boolean = false) =
+    "ZenlessButton(\n    onClick = { /* handle action */ },\n    tone = ZenlessTone.${tone.name},\n    size = ZenlessSize.${size.name},\n    variant = ZenlessButtonVariant.${variant.name},\n    enabled = $enabled, loading = $loading,\n    selected = $selected, round = $round,\n" +
+        (if(leadingIcon)"    leadingIcon = {\n        val ink = zenlessContentColor\n        Canvas(Modifier.size(12.dp)) { drawCircle(ink) }\n    },\n" else "") +
+        ") {\n    ZenlessText(${quote(text)})\n}"
+
+@Composable private fun CallerIcon() {
+    val ink=zenlessContentColor
+    Canvas(Modifier.size(12.dp)) { drawCircle(ink) }
+}
 
 @Composable private fun ButtonsDemo(tr: (String, String) -> String, record: (String) -> Unit) {
     var text by remember { mutableStateOf(tr("Continue", "继续")) }
     var tone by remember { mutableIntStateOf(1) }; var size by remember { mutableIntStateOf(2) }; var variant by remember { mutableIntStateOf(0) }
     var enabled by remember { mutableStateOf(true) }; var loading by remember { mutableStateOf(false) }; var selected by remember { mutableStateOf(false) }; var round by remember { mutableStateOf(true) }
+    var leadingIcon by remember { mutableStateOf(true) }
     Preview(tr("Live preview", "实时预览")) {
         Box(Modifier.fillMaxWidth().heightIn(min = 120.dp), contentAlignment = Alignment.Center) {
-            ZenlessButton({ record(text) }, tone = ZenlessTone.entries[tone], size = ZenlessSize.entries[size], variant = ZenlessButtonVariant.entries[variant], enabled = enabled, loading = loading, selected = selected, round = round) { ZenlessText(text) }
+            ZenlessButton({ record(text) }, tone = ZenlessTone.entries[tone], size = ZenlessSize.entries[size], variant = ZenlessButtonVariant.entries[variant], enabled = enabled, loading = loading, selected = selected, round = round, leadingIcon = if(leadingIcon)({CallerIcon()}) else null) { ZenlessText(text) }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) { ZenlessBackButton({ record("Back") }, tr("Back", "返回")); ZenlessCloseButton({ record("Close") }, tr("Close", "关闭")) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            ZenlessBackButton({ record("Back") }, tr("Back", "返回")); ZenlessCloseButton({ record("Close") }, tr("Close", "关闭"))
+            ZenlessIconButton({record("Icon")},tr("Icon button","图标按钮")) { CallerIcon() }
+        }
     }
     Preview(tr("Parameters", "参数")) {
         ZenlessTextField(text, { text = it }, label = tr("Label", "文字"))
@@ -181,9 +192,10 @@ internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, v
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             ZenlessSwitch(enabled, { enabled = it }, label = tr("Enabled", "启用")); ZenlessSwitch(loading, { loading = it }, label = tr("Loading", "加载"))
             ZenlessSwitch(selected, { selected = it }, label = tr("Selected", "选中")); ZenlessSwitch(round, { round = it }, label = tr("Round", "圆角"))
+            ZenlessSwitch(leadingIcon, {leadingIcon=it},label=tr("Leading icon","左侧图标"))
         }
     }
-    CodeExample(buttonExample(text, ZenlessTone.entries[tone], ZenlessSize.entries[size], ZenlessButtonVariant.entries[variant], enabled, loading, selected, round), tr)
+    CodeExample(buttonExample(text, ZenlessTone.entries[tone], ZenlessSize.entries[size], ZenlessButtonVariant.entries[variant], enabled, loading, selected, round, leadingIcon), tr)
 }
 
 @Composable private fun NavigationDemo(tr: (String, String) -> String, record: (String) -> Unit) {

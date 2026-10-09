@@ -117,7 +117,7 @@ public fun ZenlessSelect(
     val progress = remember { Animatable(0f) }
     val density = LocalDensity.current
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, expanded, enabled)
+    val feedback = rememberFeedback(source, false, enabled, ambient = expanded)
     val overlayContext=LocalOverlays.current
     LaunchedEffect(expanded, enabled) {
         if (!enabled) expanded = false
@@ -128,9 +128,9 @@ public fun ZenlessSelect(
     FieldLayout(label,modifier) {
         Row(Modifier.fillMaxWidth().heightIn(min=62.dp).onGloballyPositioned { width=it.size.width; anchor=it.boundsInWindow().roundToIntRect() }
             .semantics { if(label.isNotEmpty())contentDescription=label;stateDescription=options[selectedIndex] }
-            .plate(remember { Feedback() },fill=if(enabled)Color.Black else Color(0xff080808),edge=if(enabled)Color(0xff323232) else Color(0xff191919),enabled=enabled,input=true)
+            .plate(feedback,fill=if(enabled)Color.Black else Color(0xff080808),edge=if(enabled)Color(0xff323232) else Color(0xff191919),enabled=enabled,input=true)
             .pointerClick(enabled,source) { expanded=!expanded }.padding(start=17.dp,end=12.dp),verticalAlignment=Alignment.CenterVertically) {
-            CompositionLocalProvider(LocalInk provides if(enabled)Color.White else Color(0xff737373),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=24.sp)) {
+            CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff737373),Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=24.sp)) {
                 ZenlessText(options[selectedIndex],Modifier.weight(1f),maxLines=1)
                 Mark(Mark.Down,Modifier.padding(start=7.dp).size(24.dp))
             }
@@ -155,9 +155,9 @@ public fun ZenlessSelect(
                     val optionSource=remember { MutableInteractionSource() }
                     val optionFeedback=rememberFeedback(optionSource,index==selectedIndex,true)
                     Box(Modifier.fillMaxWidth().heightIn(min=64.dp).drawWithCache { onDrawBehind {
-                        if(index==selectedIndex)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(optionFeedback.seconds)),cornerRadius=CornerRadius(size.height/2))
+                        if(optionFeedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(optionFeedback.seconds)).copy(alpha=optionFeedback.highlight),cornerRadius=CornerRadius(size.height/2))
                     }}.semantics { selected=index==selectedIndex }.pointerClick(expanded,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=16.dp),contentAlignment=Alignment.Center) {
-                        CompositionLocalProvider(LocalInk provides if(index==selectedIndex)Color.Black else Color.White,LocalTextStyle provides LocalTextStyle.current.copy(fontSize=24.sp)) { ZenlessText(text,maxLines=1) }
+                        CompositionLocalProvider(LocalInk provides mix(if(index==selectedIndex)Color.Black else Color.White,Color.Black,optionFeedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=24.sp)) { ZenlessText(text,maxLines=1) }
                     }
                 }
             }
@@ -312,7 +312,7 @@ private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,nar
             drawCircle(Color(0xff060606).copy(alpha=1-feedback.highlight))
             drawCircle(Color(0xff303030).copy(alpha=1-feedback.highlight),radius=size.width/2-2.dp.toPx(),style=Stroke(4.dp.toPx()))
             drawCircle(mix(if(confirm)Color(0xff00d127) else Color(0xffec1000),Color.Black,feedback.highlight),16.dp.toPx())
-        }},contentAlignment=Alignment.Center) { Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp),mix(Color.Black,Palette.signal,feedback.highlight)) }
+        }},contentAlignment=Alignment.Center) { Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp),mix(Color.Black,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)) }
     }
 }
 

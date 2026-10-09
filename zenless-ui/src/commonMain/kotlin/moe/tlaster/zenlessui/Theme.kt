@@ -35,7 +35,12 @@ internal object Palette {
     }
 }
 internal val LocalInk = compositionLocalOf { Color.White }
+internal val LocalButtonHighlight = compositionLocalOf { 0f }
 internal val LocalTextStyle = compositionLocalOf { TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Default) }
+
+/** Read the current text/icon ink inside a button content slot, including its press feedback. */
+public val zenlessContentColor: Color
+    @Composable @ReadOnlyComposable get() = LocalInk.current
 
 /** The fixed dark theme. Put [ZenlessOverlayHost] inside this theme when using overlays. */
 @Composable
@@ -61,7 +66,7 @@ public fun ZenlessText(
         ZenlessTextStyle.Caption -> base.copy(fontSize = 20.sp)
         ZenlessTextStyle.Number -> base.copy(fontSize = 44.sp, fontWeight = FontWeight.Bold)
     }
-    BasicText(text, modifier, typography.copy(color = if (style == ZenlessTextStyle.Caption) Palette.muted else LocalInk.current),
+    BasicText(text, modifier, typography.copy(color = if (style == ZenlessTextStyle.Caption) mix(Palette.muted,Color.Black,LocalButtonHighlight.current) else LocalInk.current),
         maxLines = maxLines, overflow = TextOverflow.Ellipsis)
 }
 
