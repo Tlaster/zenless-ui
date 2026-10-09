@@ -1,0 +1,28 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  A00000000000000000000001 = {isa = PBXProject; buildConfigurationList = A00000000000000000000002; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; knownRegions = (en, Base, "zh-Hans"); mainGroup = A00000000000000000000003; productRefGroup = A00000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000005); };
+  A00000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000006, A00000000000000000000007); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000008, A00000000000000000000004); sourceTree = "<group>"; };
+  A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000009); name = Products; sourceTree = "<group>"; };
+  A00000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = A0000000000000000000000A; buildPhases = (A0000000000000000000000B, A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E); buildRules = (); dependencies = (); name = iosApp; productName = iosApp; productReference = A00000000000000000000009; productType = "com.apple.product-type.application"; };
+  A00000000000000000000006 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 14.0; SWIFT_VERSION = 5.0; ARCHS = arm64; CLANG_ENABLE_MODULES = YES; }; };
+  A00000000000000000000007 = {isa = XCBuildConfiguration; name = Release; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 14.0; SWIFT_VERSION = 5.0; ARCHS = arm64; CLANG_ENABLE_MODULES = YES; }; };
+  A00000000000000000000008 = {isa = PBXGroup; path = iosApp; sourceTree = "<group>"; children = (A0000000000000000000000F, A00000000000000000000010); };
+  A00000000000000000000009 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+  A0000000000000000000000A = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000011, A00000000000000000000012); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  A0000000000000000000000B = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = (); runOnlyForDeploymentPostprocessing = 0; alwaysOutOfDate = 1; name = "Build Kotlin framework"; shellPath = /bin/sh; shellScript = "cd \"$SRCROOT/..\"\n./gradlew :gallery:embedAndSignAppleFrameworkForXcode\n"; };
+  A0000000000000000000000C = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000013); runOnlyForDeploymentPostprocessing = 0; };
+  A0000000000000000000000D = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  A0000000000000000000000E = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  A0000000000000000000000F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenlessGalleryApp.swift; sourceTree = "<group>"; };
+  A00000000000000000000010 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+  A00000000000000000000011 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = moe.tlaster.zenlessui.gallery; PRODUCT_NAME = "$(TARGET_NAME)"; INFOPLIST_FILE = iosApp/Info.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; ENABLE_USER_SCRIPT_SANDBOXING = NO; FRAMEWORK_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/../gallery/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"); OTHER_LDFLAGS = ("$(inherited)", "-framework", Gallery); SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; };
+  A00000000000000000000012 = {isa = XCBuildConfiguration; name = Release; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = moe.tlaster.zenlessui.gallery; PRODUCT_NAME = "$(TARGET_NAME)"; INFOPLIST_FILE = iosApp/Info.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic; ENABLE_USER_SCRIPT_SANDBOXING = NO; FRAMEWORK_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/../gallery/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"); OTHER_LDFLAGS = ("$(inherited)", "-framework", Gallery); SWIFT_OPTIMIZATION_LEVEL = "-O"; }; };
+  A00000000000000000000013 = {isa = PBXBuildFile; fileRef = A0000000000000000000000F; };
+ };
+ rootObject = A00000000000000000000001;
+}

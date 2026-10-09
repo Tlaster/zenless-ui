@@ -1,0 +1,140 @@
+name: Build and verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25'}
+      - uses: android-actions/setup-android@v3
+        with: {packages: platform-tools, log-accepted-android-sdk-licenses: false}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
+      - run: ./gradlew :androidApp:assembleDebug :gallery:wasmJsBrowserDistribution --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gallery-android
+          path: androidApp/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gallery-web
+          path: gallery/build/dist/wasmJs/productionExecutable
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-latest, format: Msi, name: windows-x64}
+          - {os: ubuntu-latest, format: Deb, name: linux-x64}
+          - {os: macos-15, format: Dmg, name: macos-arm64}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25'}
+      - uses: android-actions/setup-android@v3
+        with: {packages: platform-tools, log-accepted-android-sdk-licenses: false}
+      - uses: gradle/actions/setup-gradle@v4
+      - if: runner.os == 'macOS'
+        run: test "$(uname -m)" = arm64
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot fonts-noto-cjk
+      - name: Tests and native package
+        shell: bash
+        run: ./gradlew :zenless-ui:desktopTest :gallery:desktopTest :gallery:package${{ matrix.format }} --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gallery-${{ matrix.name }}
+          path: gallery/build/compose/binaries/main/*/*
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-${{ matrix.name }}
+          path: |
+            verification/*.png
+            **/build/reports/tests/
+            gallery/build/compose/logs/
+      - name: Print packaging diagnostics
+        if: failure()
+        shell: bash
+        run: find gallery/build/compose/logs -type f -name '*err.txt' -exec cat {} +
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25'}
+      - uses: android-actions/setup-android@v3
+        with: {packages: platform-tools, log-accepted-android-sdk-licenses: false}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: test "$(uname -m)" = arm64
+      - name: Build simulator app
+        run: xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO build
+      - name: Build device framework
+        run: ./gradlew :gallery:linkReleaseFrameworkIosArm64 :zenless-ui:iosSimulatorArm64Test :zenless-ui:publishToMavenLocal
+      - name: Launch simulator gallery
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for devices in d["devices"].values() for x in devices if "iPhone" in x["name"]))')
+          xcrun simctl boot "$device" || xcrun simctl bootstatus "$device" -b
+          xcrun simctl bootstatus "$device" -b
+          xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/iosApp.app
+          xcrun simctl launch "$device" moe.tlaster.zenlessui.gallery
+          sleep 5
+          xcrun simctl io "$device" screenshot build/ios/gallery.png
+          ditto -c -k --keepParent build/ios/Build/Products/Debug-iphonesimulator/iosApp.app build/ios/ZenlessGallery-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gallery-ios-simulator
+          path: |
+            build/ios/ZenlessGallery-simulator.zip
+            build/ios/gallery.png
+  android-smoke:
+    needs: web-android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: gallery-android, path: apk}
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          disable-animations: false
+          script: |
+            adb install apk/androidApp-debug.apk
+            adb shell am start -W -n moe.tlaster.zenlessui.gallery/moe.tlaster.zenlessui.gallery.android.MainActivity
+            sleep 5
+            adb shell pidof moe.tlaster.zenlessui.gallery
+            adb shell screencap -p /sdcard/gallery.png
+            adb pull /sdcard/gallery.png gallery-android.png
+      - uses: actions/upload-artifact@v4
+        with: {name: verification-android, path: gallery-android.png}
+  pages:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [web-android, desktop, ios, android-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: gallery-web, path: web}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: web}
+      - uses: actions/deploy-pages@v4
+        id: deployment
