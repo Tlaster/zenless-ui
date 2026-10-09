@@ -72,7 +72,8 @@ class VisualTest {
         assertTrue(pixels[60,2].blue > .9f && pixels[60,2].red < .1f,"Primary edge must retain its semantic blue")
         assertTrue(pixels[60,4].red < .02f && pixels[60,4].blue < .02f,"Enabled plate has a black separator at four units")
         save("components-calibrated")
-        val resting=headerPath(Rect(0f,0f,90f,60f),true).getBounds()
+        // Compare sampled contours; cubic getBounds also includes control points outside the curve.
+        val resting=headerPath(Rect(0f,0f,90f,60f),true,.001f).getBounds()
         val expanded=headerPath(Rect(0f,0f,90f,60f),true,9f).getBounds()
         assertTrue(expanded.left<resting.left-8 && expanded.right>resting.right+8)
         assertTrue(expanded.top<resting.top-8 && expanded.bottom>resting.bottom+8)
