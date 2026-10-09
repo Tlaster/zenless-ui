@@ -25,7 +25,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 /** Editing, IME and clipboard use Compose's text engine; no custom shortcut navigation. */
@@ -39,18 +41,19 @@ public fun ZenlessTextField(
 ) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
-    val feedback = rememberFeedback(source, focused, enabled)
+    val feedback = rememberFeedback(source, false, enabled)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (label.isNotEmpty()) ZenlessText(label)
-        BasicTextField(value, onValueChange, Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        FieldLayout(label) {
+        BasicTextField(value, onValueChange, Modifier.fillMaxWidth().heightIn(min = 40.dp)
             .semantics { if (label.isNotEmpty()) contentDescription = label; if (error != null) error(error) }
-            .plate(feedback, Color(0xff1c1c1c), if (error != null) Palette.tone(ZenlessTone.Danger) else Color(0xff323232), expand = false, highlightFill = false)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .plate(feedback, if (enabled) Color(0xff1c1c1c) else Color(0xff2e2e2e), if (error != null) Palette.tone(ZenlessTone.Danger) else if (focused) Palette.signal else Color(0xff323232), pattern = false, expand = false, highlightFill = false, enabled = enabled, input = true)
+            .padding(horizontal = 17.dp, vertical = 10.dp),
             enabled = enabled, readOnly = readOnly, singleLine = singleLine, keyboardOptions = keyboardOptions,
             visualTransformation = visualTransformation, interactionSource = source,
-            textStyle = LocalTextStyle.current.copy(color = if (enabled) Color.White else Palette.muted),
+            textStyle = LocalTextStyle.current.copy(fontSize=14.sp,color = if (enabled) Color.White else Color(0xff808080)),
             cursorBrush = SolidColor(Palette.signal),
             decorationBox = { inner -> Box { if (value.isEmpty()) CompositionLocalProvider(LocalInk provides Palette.muted) { ZenlessText(placeholder) }; inner() } })
+        }
         val hint = error ?: supportingText
         if (!hint.isNullOrEmpty()) CompositionLocalProvider(LocalInk provides if (error != null) Color(0xffff7358) else Palette.muted) { ZenlessText(hint) }
     }
@@ -66,8 +69,8 @@ public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableSta
     Row(modifier.heightIn(min = 48.dp).focusProperties { canFocus = false }
         .triStateToggleable(state, interactionSource = source, indication = null, enabled = enabled, role = Role.Checkbox) { onStateChange(nextCheckState(state)) }.padding(6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(28.dp).plate(feedback, lerp(Color.Black, Palette.signal, fill), if (enabled) Color(0xff555555) else Palette.line, round = false, pattern = false), contentAlignment = Alignment.Center) {
-            if (state != ToggleableState.Off) Mark(if (state == ToggleableState.Indeterminate) Mark.Minus else Mark.Check, Modifier.size(24.dp), if (enabled) Color.Black else Palette.muted)
+        Box(Modifier.size(28.dp).plate(feedback, if(enabled)mix(Color.Black, Palette.signal, fill) else Color(0xff2e2e2e), Color(0xff333333), round = false, pattern = false,enabled=enabled), contentAlignment = Alignment.Center) {
+            if (state != ToggleableState.Off) Mark(if (state == ToggleableState.Indeterminate) Mark.Minus else Mark.Check, Modifier.size(20.dp), if (enabled) Color.Black else Palette.muted)
         }
         if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color.White else Palette.muted) { ZenlessText(label) }
     }
@@ -80,7 +83,7 @@ public fun ZenlessRadioButton(selected: Boolean, onClick: () -> Unit, modifier: 
     val fraction by animateFloatAsState(if (selected) 1f else 0f, tween(160))
     Row(modifier.heightIn(min = 48.dp).focusProperties { canFocus = false }.selectable(selected, source, null, enabled, Role.RadioButton, onClick).padding(6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Canvas(Modifier.size(28.dp).plate(feedback, pattern = false)) {
+        Canvas(Modifier.size(28.dp).plate(feedback, pattern = false,enabled=enabled)) {
             drawCircle(if (enabled) Palette.signal else Palette.muted, 7.dp.toPx() * fraction)
         }
         if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color.White else Palette.muted) { ZenlessText(label) }
@@ -95,11 +98,9 @@ public fun ZenlessSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, m
     Row(modifier.heightIn(min = 48.dp).focusProperties { canFocus = false }
         .triStateToggleable(if (checked) ToggleableState.On else ToggleableState.Off, interactionSource = source, indication = null, enabled = enabled, role = Role.Switch) { onCheckedChange(!checked) }.padding(6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Canvas(Modifier.size(52.dp, 30.dp).plate(feedback, if (enabled) lerp(Color.Black, Palette.signal, fraction) else Color(0xff292929), pattern = false)) {
-            val radius = 9.dp.toPx()
-            val center = Offset(15.dp.toPx() + (size.width - 30.dp.toPx()) * fraction, size.height / 2)
-            drawCircle(Brush.radialGradient(listOf(Color(0xffeeeeee), Color(0xff777777)), center, radius), radius, center)
-            drawCircle(Color.Black, radius, center, style = Stroke(1.dp.toPx()))
+        Canvas(Modifier.size(52.dp, 30.dp).plate(feedback, if (enabled) mix(Color.Black, Palette.signal, fraction) else Color(0xff292929), pattern = false)) {
+            val center=Offset(15.dp.toPx()+(size.width-30.dp.toPx())*fraction,size.height/2)
+            metalKnob(center)
         }
         if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color.White else Palette.muted) { ZenlessText(label) }
     }
@@ -123,9 +124,13 @@ public fun ZenlessSlider(
     val update by rememberUpdatedState(onValueChange)
     val finished by rememberUpdatedState(onValueChangeFinished)
     val fraction = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (label.isNotEmpty()) ZenlessText(label)
-        Canvas(Modifier.fillMaxWidth().height(48.dp).onSizeChanged { width = it.width }
+    val numberSource = remember { MutableInteractionSource() }
+    val numberFocused by numberSource.collectIsFocusedAsState()
+    var numberText by remember { mutableStateOf(value.toString().removeSuffix(".0")) }
+    LaunchedEffect(value, numberFocused) { if (!numberFocused) numberText=value.toString().removeSuffix(".0") }
+    FieldLayout(label, modifier) {
+        Row(verticalAlignment=Alignment.CenterVertically) {
+        Canvas(Modifier.weight(1f).padding(end=20.dp).height(40.dp).onSizeChanged { width = it.width }
             .semantics {
                 if (label.isNotEmpty()) contentDescription = label
                 progressBarRangeInfo = ProgressBarRangeInfo(value.coerceIn(valueRange), valueRange, steps)
@@ -140,10 +145,29 @@ public fun ZenlessSlider(
             val knob = Offset(start.x + (end.x - start.x) * fraction, start.y)
             drawLine(Color(0xff383838), start, end, 6.dp.toPx(), StrokeCap.Round)
             drawLine(if (enabled) Color(0xff737373) else Palette.line, start, knob, 6.dp.toPx(), StrokeCap.Round)
-            drawCircle(Color.Black, 12.dp.toPx(), knob)
-            drawCircle(Brush.sweepGradient(listOf(Color(0xff444444), Color(0xffdddddd), Color(0xff777777), Color(0xffeeeeee), Color(0xff444444)), knob), 11.dp.toPx(), knob)
-            drawCircle(Color(0xff666666), 7.dp.toPx(), knob)
-            drawLine(Color(0xffdddddd), Offset(knob.x - 6.dp.toPx(), knob.y), Offset(knob.x - 3.dp.toPx(), knob.y), 1.dp.toPx())
+            metalKnob(knob)
+        }
+        BasicTextField(numberText, { raw ->
+            numberText=raw
+            raw.toFloatOrNull()?.takeIf { it.isFinite() }?.let { update(sliderValue((it-valueRange.start)/(valueRange.endInclusive-valueRange.start),valueRange,steps));finished() }
+        },
+            Modifier.width(54.dp).heightIn(min=32.dp).background(Color.Black,RoundedCornerShape(16.dp)).border(3.dp,Color(0xff323232),RoundedCornerShape(16.dp)).padding(horizontal=8.dp,vertical=6.dp),enabled=enabled,singleLine=true,
+            interactionSource=numberSource,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+            textStyle=LocalTextStyle.current.copy(fontSize=14.sp,color=if(enabled)Color.White else Palette.muted),cursorBrush=SolidColor(Palette.signal))
+        }
+    }
+}
+
+
+@Composable
+internal fun FieldLayout(label: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    BoxWithConstraints(modifier) {
+        if (label.isNotEmpty() && maxWidth >= 540.dp) Row(verticalAlignment=Alignment.CenterVertically) {
+            CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=18.sp)) { ZenlessText(label,Modifier.width(180.dp)) }
+            Box(Modifier.weight(1f)) { content() }
+        } else Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            if(label.isNotEmpty()) CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=18.sp)) { ZenlessText(label) }
+            content()
         }
     }
 }

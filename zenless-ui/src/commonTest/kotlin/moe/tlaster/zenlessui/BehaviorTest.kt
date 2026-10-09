@@ -6,6 +6,12 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.test.*
 
 class BehaviorTest {
+    @Test fun artworkColorsUseChannelInterpolation() {
+        val tint=mix(androidx.compose.ui.graphics.Color.Black,androidx.compose.ui.graphics.Color.White,.06f)
+        assertEquals(.06f,tint.red,.002f)
+        assertEquals(.06f,tint.green,.002f)
+        assertEquals(.06f,tint.blue,.002f)
+    }
     @Test fun mixedCheckboxSelectsAllInsteadOfCyclingToOff() {
         assertEquals(ToggleableState.On, nextCheckState(ToggleableState.Indeterminate))
         assertEquals(ToggleableState.Off, nextCheckState(ToggleableState.On))

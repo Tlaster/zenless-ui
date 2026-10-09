@@ -1,6 +1,9 @@
 package moe.tlaster.zenlessui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -11,9 +14,31 @@ import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class InteractionTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun quickTapFlashesEvenWhenPressAndReleaseShareAFrame() {
+        val source = MutableInteractionSource()
+        lateinit var feedback: Feedback
+        compose.mainClock.autoAdvance = false
+        compose.setContent { feedback = rememberFeedback(source, selected = false, enabled = true) }
+        compose.mainClock.advanceTimeByFrame()
+        val press = PressInteraction.Press(Offset.Zero)
+        compose.runOnIdle { source.tryEmit(press); source.tryEmit(PressInteraction.Release(press)) }
+        var peak = 0f
+        repeat(12) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.runOnIdle { peak = maxOf(peak, feedback.highlight) }
+        }
+        assertTrue(peak > .9f, "A quick tap must retain the release flash")
+        compose.mainClock.advanceTimeBy(200)
+        compose.runOnIdle { assertEquals(0f, feedback.highlight) }
+        compose.runOnIdle { source.tryEmit(press); source.tryEmit(PressInteraction.Cancel(press)) }
+        compose.mainClock.advanceTimeBy(64)
+        compose.runOnIdle { assertEquals(0f, feedback.highlight, "Cancelled gestures must not flash") }
+    }
 
     @Test fun controlledInputsAndDisabledButton() {
         var state = ToggleableState.Indeterminate
@@ -38,6 +63,34 @@ class InteractionTest {
         compose.onNodeWithTag("disabled").assertIsNotEnabled().performTouchInput { click() }
         compose.onNodeWithTag("loading").assertIsNotEnabled().performTouchInput { click() }
         compose.runOnIdle { assertEquals(ToggleableState.On, state); assertEquals(1, radio); assertEquals(true, switched); assertEquals(0, clicks) }
+    }
+
+    @Test fun numericSliderAcceptsIntermediateTextAndHonorsSteps() {
+        var value by mutableFloatStateOf(0f)
+        compose.mainClock.autoAdvance=false
+        compose.setContent { ZenlessTheme { ZenlessSlider(value,{value=it},Modifier.width(300.dp),steps=3) } }
+        val number=compose.onNode(hasSetTextAction())
+        number.performClick().performTextClearance()
+        number.performTextInput("0.")
+        number.performTextInput("6")
+        compose.runOnIdle { assertEquals(.5f,value) }
+        number.performTextReplacement("NaN")
+        compose.runOnIdle { assertEquals(.5f,value) }
+    }
+
+    @Test fun longSelectFitsBetweenAnchorAndViewportEdge() {
+        compose.mainClock.autoAdvance=false
+        compose.setContent { ZenlessTheme { ZenlessOverlayHost(Modifier.size(400.dp,320.dp)) {
+            Box(Modifier.padding(top=120.dp)) { ZenlessSelect((1..20).map { "Option $it" },0,{},Modifier.width(240.dp),label="Long list") }
+        } } }
+        compose.onNodeWithContentDescription("Long list").performTouchInput { click() }
+        compose.mainClock.advanceTimeBy(300)
+        val options=compose.onAllNodesWithText("Option 1").fetchSemanticsNodes()
+        assertEquals(2,options.size)
+        val root=compose.onRoot().fetchSemanticsNode().boundsInRoot
+        assertTrue(options.all { it.boundsInRoot.top>=root.top && it.boundsInRoot.bottom<=root.bottom })
+        compose.onNodeWithText("Option 2").performTouchInput { click() }
+        compose.mainClock.advanceTimeBy(200)
     }
 
     @Test fun alertConfirmsOnceAfterExitAndBlocksUnderlyingButton() {

@@ -28,6 +28,11 @@ class GalleryTest {
         compose.mainClock.advanceTimeBy(400)
         compose.onNodeWithText("ZENLESS UI").assertExists()
         capture("gallery-wide")
+        Demo.entries.drop(1).forEach { page ->
+            compose.onAllNodesWithText(page.zh)[0].performClick()
+            compose.mainClock.advanceTimeBy(400)
+            capture("gallery-${page.name.lowercase()}")
+        }
         compose.onAllNodesWithText("按钮")[0].performClick()
         compose.mainClock.advanceTimeBy(400)
         compose.onNodeWithText("实时预览").assertExists()

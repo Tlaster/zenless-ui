@@ -1,12 +1,14 @@
 package moe.tlaster.zenlessui
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.animation.core.Easing
 import androidx.compose.runtime.*
 import kotlin.math.abs
 
 /** Shared timing curves; attribution is recorded in THIRD_PARTY_NOTICES.md. */
 internal object Motion {
+    val smoothEasing=Easing { smooth(it) }
     private fun smooth(value: Float): Float { val x = value.coerceIn(0f, 1f); return x * x * (3 - 2 * x) }
     fun modal(progress: Float, closing: Boolean): ModalFrame {
         val t = if (closing) (1 - progress) * .22f else progress * .25f
@@ -24,6 +26,7 @@ internal object Motion {
         }
         return t * t * (3 - 2 * t)
     }
+    fun signalColor(seconds: Float): Float = bezier(1 - abs(seconds % 2f - 1), .42f, .58f)
     fun color(seconds: Float): Float = bezier(1 - abs((seconds % 1.5f) / .75f - 1), .42f, .58f)
     fun pulse(seconds: Float): Float {
         if (seconds < .15f) return bezier(seconds / .15f, .42f, 1f)
@@ -49,13 +52,21 @@ internal class Feedback {
 }
 
 @Composable
-internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolean, enabled: Boolean): Feedback {
-    val pressed by source.collectIsPressedAsState()
+internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolean, enabled: Boolean, ambient: Boolean = false): Feedback {
+    var pressed by remember { mutableStateOf(false) }
+    var releaseCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(source) {
+        source.interactions.collect { event -> when(event) {
+            is PressInteraction.Press -> pressed=true
+            is PressInteraction.Release -> { pressed=false;releaseCount++ }
+            is PressInteraction.Cancel -> pressed=false
+        } }
+    }
     val state = remember { Feedback() }
-    var wasPressed by remember { mutableStateOf(false) }
-    LaunchedEffect(pressed, selected, enabled, state.visible) {
-        val released = wasPressed && !pressed
-        wasPressed = pressed
+    var processedRelease by remember { mutableIntStateOf(0) }
+    LaunchedEffect(pressed, releaseCount, selected, enabled, ambient, state.visible) {
+        val released=releaseCount!=processedRelease
+        processedRelease=releaseCount
         if (!enabled || !state.visible) { state.active = false; state.release = -1f; state.seconds = 0f; return@LaunchedEffect }
         if (released) {
             val start = withFrameNanos { it }
@@ -63,9 +74,9 @@ internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolea
         }
         state.release = -1f
         val active = pressed || selected
-        if (active) {
+        if (active || ambient) {
             if (!state.active) state.seconds = 0f
-            state.active = true
+            state.active = active
             var last = withFrameNanos { it }
             while (true) { withFrameNanos { now -> state.seconds += (now - last) / 1_000_000_000f; last = now } }
         } else { state.active = false; state.seconds = 0f }

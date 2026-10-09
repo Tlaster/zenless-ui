@@ -150,7 +150,7 @@ public fun GalleryApp() {
     Preview(tr("Typography / platform default", "文字层级 / 平台默认字体")) {
         ZenlessText(tr("Ready for anything", "准备就绪"), style = ZenlessTextStyle.Title)
         ZenlessText(tr("Clear structure. Expressive details.", "清晰的结构，鲜明的细节。"), style = ZenlessTextStyle.Subtitle)
-        ZenlessText(tr("Body text uses the platform default font.", "正文使用平台默认字体，支持中文与英文。"))
+        ZenlessText(tr("Body text uses the platform default font.", "正文使用平台默认字体，支持中文与英文。"),style=ZenlessTextStyle.Body)
         ZenlessText(tr("Caption / supporting information", "注释 / 辅助信息"), style = ZenlessTextStyle.Caption)
         ZenlessMetric("026", unit = "%", change = "+12")
     }

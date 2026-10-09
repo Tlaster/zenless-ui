@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
 public enum class ZenlessTone { Neutral, Accent, Primary, Success, Warning, Danger, Info }
 public enum class ZenlessSize { Mini, Small, Default, Large, Extra }
 public enum class ZenlessButtonVariant { Filled, Plain, Hollow }
-public enum class ZenlessTextStyle { Title, Subtitle, Body, Caption, Number }
+public enum class ZenlessTextStyle { Inherit, Title, Subtitle, Body, Caption, Number }
 
 internal object Palette {
     val background = Color(0xff101012)
@@ -49,16 +49,17 @@ public fun ZenlessTheme(content: @Composable () -> Unit) {
 public fun ZenlessText(
     text: String,
     modifier: Modifier = Modifier,
-    style: ZenlessTextStyle = ZenlessTextStyle.Body,
+    style: ZenlessTextStyle = ZenlessTextStyle.Inherit,
     maxLines: Int = Int.MAX_VALUE,
 ) {
     val base = LocalTextStyle.current
     val typography = when (style) {
-        ZenlessTextStyle.Title -> base.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold)
-        ZenlessTextStyle.Subtitle -> base.copy(fontSize = 21.sp, fontWeight = FontWeight.Bold)
-        ZenlessTextStyle.Body -> base
-        ZenlessTextStyle.Caption -> base.copy(fontSize = 12.sp)
-        ZenlessTextStyle.Number -> base.copy(fontSize = 36.sp, fontWeight = FontWeight.Bold)
+        ZenlessTextStyle.Title -> base.copy(fontSize = 42.sp, fontWeight = FontWeight.Bold)
+        ZenlessTextStyle.Subtitle -> base.copy(fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        ZenlessTextStyle.Inherit -> base
+        ZenlessTextStyle.Body -> base.copy(fontSize = 24.sp)
+        ZenlessTextStyle.Caption -> base.copy(fontSize = 20.sp)
+        ZenlessTextStyle.Number -> base.copy(fontSize = 44.sp, fontWeight = FontWeight.Bold)
     }
     BasicText(text, modifier, typography.copy(color = if (style == ZenlessTextStyle.Caption) Palette.muted else LocalInk.current),
         maxLines = maxLines, overflow = TextOverflow.Ellipsis)
