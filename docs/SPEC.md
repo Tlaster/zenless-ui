@@ -2,7 +2,7 @@
 
 ## Visual foundation
 
-One dark theme, platform default font, fixed semantic tones: Neutral `#333333`, Accent `#FFEA00`, Primary `#008BFF`, Success `#00CC0D`, Warning `#FFC300`, Danger `#C01C00`, Info `#CCCCCC`. There is no palette or motion-disable API.
+One dark theme, platform default font, fixed semantic tones: Neutral `#333333`, Accent `#FFEA00`, Primary `#008BFF`, Success `#00CC0D`, Warning `#FFC300`, Danger `#C01C00`, Info `#CCCCCC`. There is no palette or global motion-disable API.
 
 Button minimum heights are 30 / 34 / 40 / 46 / 52 dp. Typography scales are 12 / 12 / 14 / 16 / 18 sp. Horizontal paddings are 17 / 23 / 29 / 47 / 59 dp. These values are logical dimensions; text scaling may increase measured height. Business icons belong in content slots. Checkbox checks, mixed marks, close, back and dropdown arrows are intrinsic geometry.
 
@@ -13,6 +13,10 @@ Control text inherits its surrounding style (14 sp by default). Explicit Body / 
 Folder tabs occupy an 84 dp rail, with 18 dp top corners and square bottom corners. Their unbranded faces are redrawn vector artwork. A single-line Alert has a centered 186 dp band and 272 by 56 dp actions centered across its lower edge; content grows for multiple lines and actions adapt to narrow screens. Alert actions reuse `ZenlessButton` with `leadingIcon`, including its shell, state ink and interaction feedback. Drawer width is 46% of the viewport, capped at 680 dp, or full width below 600 dp. It has a 96 dp header and a draggable 8 dp scroll thumb.
 
 ## State and motion
+
+Non-folder tabs have circular caps on the first and last outer edges, with slanted interior edges. A single tab has two circular caps. `ZenlessTabs(expand = false)` keeps the 1.5-second color cycle and pressed/release feedback without outline expansion; the default is `true`. Folder tabs ignore this option.
+
+Non-folder selection uses one shared indicator, moving over 280 ms with `cubic-bezier(0.22, 1, 0.36, 1)`. Its caps interpolate between circles and slanted rounded corners as it leaves or approaches either end. Interrupted transitions retarget from the current position, and color/scale breathing keeps its phase. Text is black only where the moving indicator covers it. The selected indicator remains visible through release; unselected pressed faces retain their release flash. `expand = false` removes the scale pulse, not selection movement or morphing. Item-count, folder-style or layout-direction changes reset the indicator to the current selection.
 
 - Controlled values, selection and visibility are supplied by callers. Radio groups are caller-owned; wrap grouped radios in `selectableGroup()`.
 - Checkbox toggling maps Off or Indeterminate to On, and On to Off. Switch toggles on click/tap; dragging is not a switch interaction.

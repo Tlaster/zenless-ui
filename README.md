@@ -68,6 +68,8 @@ fun Example() {
 
 Use one `ZenlessOverlayHost` around the application, including selects and tooltips. Alert and drawer callbacks run after their exit animation. Alerts do not dismiss on outside taps. Drawer outside taps dismiss. Tooltip hover delay is 600 ms; touch uses the platform long-press threshold, and moving its anchor or tapping outside dismisses it. Tooltips accept text only.
 
+Non-folder `ZenlessTabs` use circular outer ends and slanted interior edges. Selection slides and morphs over 280 ms with a smooth ease-out, keeping its breathing phase through rapid selection changes. Text turns black where the slider covers it. Set `expand = false` for color-only breathing without the scale pulse; selection still moves and morphs. The Gallery's Navigation page exposes this as **Scale pulse**. Folder tabs ignore `expand`.
+
 Buttons use black text and standalone icons while held. A leading icon in a black disc instead follows the plate's yellow-green breathing color, as do Alert action badges. Pass business artwork through `leadingIcon` and read `zenlessContentColor` inside the slot; this is a read-only state color, not a palette override. Regular content slots also expose this color for caller-drawn icons. For example (with Compose `Canvas`, `Modifier`, `size` and `dp` imports):
 
 ```kotlin

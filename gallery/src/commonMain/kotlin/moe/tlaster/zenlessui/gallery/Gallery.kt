@@ -206,13 +206,15 @@ internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, v
 
 @Composable private fun NavigationDemo(tr: (String, String) -> String, record: (String) -> Unit) {
     var selected by remember { mutableIntStateOf(0) }; var folder by remember { mutableStateOf(true) }
+    var expand by remember { mutableStateOf(true) }
     val labels = listOf(tr("Overview", "概览"), tr("Details", "详情"), tr("History", "历史"))
-    Preview(tr("Redrawn folder tabs", "重新绘制的文件夹页签")) {
-        ZenlessTabs(labels, selected, { selected = it; record(labels[it]) }, Modifier.fillMaxWidth(), folder)
+    Preview(tr("Tab styles", "页签样式")) {
+        ZenlessTabs(labels, selected, { selected = it; record(labels[it]) }, Modifier.fillMaxWidth(), folder, expand)
         ZenlessSwitch(folder, { folder = it }, label = tr("Folder style", "文件夹样式"))
+        if(!folder) ZenlessSwitch(expand, { expand = it }, label = tr("Scale pulse", "缩放呼吸"))
         ZenlessInfoRow(tr("Selected", "当前选中"), labels[selected])
     }
-    CodeExample("var selected by remember { mutableIntStateOf($selected) }\nZenlessTabs(\n    items = listOf(${labels.joinToString { quote(it) }}),\n    selectedIndex = selected,\n    onSelected = { selected = it },\n    folder = $folder,\n)", tr)
+    CodeExample("var selected by remember { mutableIntStateOf($selected) }\nZenlessTabs(\n    items = listOf(${labels.joinToString { quote(it) }}),\n    selectedIndex = selected,\n    onSelected = { selected = it },\n    folder = $folder,\n    expand = $expand,\n)", tr)
 }
 
 @Composable private fun FieldsDemo(tr: (String, String) -> String, record: (String) -> Unit) {

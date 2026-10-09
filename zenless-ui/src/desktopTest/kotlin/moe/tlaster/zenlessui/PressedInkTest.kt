@@ -118,6 +118,7 @@ class PressedInkTest {
         setContent { ZenlessTheme { ZenlessOverlayHost {
             Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(24.dp)) {
                 ZenlessTabs(listOf("Tab selected","Tab idle"),0,{},Modifier.width(600.dp))
+                ZenlessTabs(listOf("Color selected","Color idle"),0,{},Modifier.width(600.dp),expand=false)
                 ZenlessTabs(listOf("Folder selected","Folder idle"),0,{},Modifier.width(600.dp),folder=true)
                 ZenlessNavigation(listOf("Navigation selected","Navigation idle"),0,{},Modifier.width(320.dp))
                 ZenlessCollapse("Collapse",false,{},Modifier.width(400.dp)) {}
@@ -125,7 +126,7 @@ class PressedInkTest {
             }
         } } }
         mainClock.advanceTimeBy(200)
-        for(label in listOf("Tab idle","Folder idle","Navigation idle","Collapse")) {
+        for(label in listOf("Tab idle","Color idle","Folder idle","Navigation idle","Collapse")) {
             val button=onNodeWithText(label)
             val resting=button.ink()
             button.performTouchInput { down(center) };mainClock.advanceTimeBy(800)

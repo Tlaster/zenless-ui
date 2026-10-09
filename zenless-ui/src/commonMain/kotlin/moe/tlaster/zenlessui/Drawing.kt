@@ -194,17 +194,24 @@ internal fun headerPath(rect: Rect, back: Boolean, outset: Float = 0f): Path = P
     addPath(navigationPlatePath(rect,if(back)backOuter else closeOuter))
 }
 
-internal fun skewTabPath(rect: Rect, outset: Float = 0f): Path = Path().apply {
+internal fun skewTabPath(rect: Rect, outset: Float = 0f, roundStart: Float = 0f, roundEnd: Float = 0f): Path = Path().apply {
     val r = rect.inflate(outset)
     val a = min(10f + outset, r.height / 2)
     val k = .55228475f
-    fun sx(x: Float, y: Float) = x - .3639702f * (y - r.center.y)
-    fun line(x: Float, y: Float) = lineTo(sx(x, y), y)
-    fun curve(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float) = cubicTo(sx(x1,y1),y1,sx(x2,y2),y2,sx(x3,y3),y3)
+    fun sx(x: Float, y: Float, round: Float) = x - .3639702f * (y - r.center.y) * (1-round)
+    fun curve(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float, round: Float) = cubicTo(sx(x1,y1,round),y1,sx(x2,y2,round),y2,sx(x3,y3,round),y3)
     val l=r.left; val t=r.top; val b=r.bottom; val rr=r.right
-    moveTo(sx(l+a,t),t); line(rr-a,t); curve(rr-a+k*a,t,rr,t+a-k*a,rr,t+a)
-    line(rr,b-a); curve(rr,b-a+k*a,rr-a+k*a,b,rr-a,b); line(l+a,b)
-    curve(l+a-k*a,b,l,b-a+k*a,l,b-a); line(l,t+a); curve(l,t+a-k*a,l+a-k*a,t,l+a,t); close()
+    val left=a+(r.height/2-a)*roundStart;val right=a+(r.height/2-a)*roundEnd
+    moveTo(sx(l+left,t,roundStart),t)
+    lineTo(sx(rr-right,t,roundEnd),t)
+    curve(rr-right+k*right,t,rr,t+right-k*right,rr,t+right,roundEnd)
+    lineTo(sx(rr,b-right,roundEnd),b-right)
+    curve(rr,b-right+k*right,rr-right+k*right,b,rr-right,b,roundEnd)
+    lineTo(sx(l+left,b,roundStart),b)
+    curve(l+left-k*left,b,l,b-left+k*left,l,b-left,roundStart)
+    lineTo(sx(l,t+left,roundStart),t+left)
+    curve(l,t+left-k*left,l+left-k*left,t,l+left,t,roundStart)
+    close()
 }
 
 internal fun DrawScope.metalKnob(center: Offset) {

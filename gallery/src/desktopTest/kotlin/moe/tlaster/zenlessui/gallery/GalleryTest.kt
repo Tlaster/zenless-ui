@@ -21,6 +21,24 @@ class GalleryTest {
     @Before fun locale() { Locale.setDefault(Locale.SIMPLIFIED_CHINESE) }
     @After fun restoreLocale() { Locale.setDefault(originalLocale) }
 
+    @Test fun tabsExposeColorOnlyStyleAndMatchingExample() {
+        compose.mainClock.autoAdvance=false
+        compose.setContent { Box(Modifier.requiredSize(1024.dp,768.dp)) { GalleryApp() } }
+        compose.onAllNodesWithText("导航与页签")[0].performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("缩放呼吸").assertDoesNotExist()
+        compose.onNodeWithText("文件夹样式").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithText("缩放呼吸").assertIsOn().performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("缩放呼吸").assertIsOff()
+        compose.onNodeWithText("folder = false,\n    expand = false,",substring=true).assertExists()
+        capture("gallery-tabs-color-only")
+        compose.onNodeWithText("文件夹样式").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithText("缩放呼吸").assertDoesNotExist()
+    }
+
     @Test fun galleryNavigatesAndCapturesBothLayouts() {
         compose.mainClock.autoAdvance = false
         var wide by mutableStateOf(true)

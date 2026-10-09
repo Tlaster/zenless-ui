@@ -15,18 +15,29 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 
-/** Redrawn folder faces retain their rail, rounded silhouette and seven-unit rise. */
+/** Non-folder tabs have circular outer ends; [expand] = false keeps only their color pulse. Ignored by folder tabs. */
 @Composable
-public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier, folder: Boolean = false) {
+public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier, folder: Boolean = false, expand: Boolean = true) {
     require(items.isNotEmpty() && selectedIndex in items.indices)
     val base = remember { Feedback() }
+    val indicator=rememberFeedback(remember { MutableInteractionSource() },!folder,true)
+    val rtl=LocalLayoutDirection.current==LayoutDirection.Rtl
+    val position by key(items.size,folder,rtl) {
+        animateFloatAsState((if(rtl)items.lastIndex-selectedIndex else selectedIndex).toFloat(),tween(280,easing=CubicBezierEasing(.22f,1f,.36f,1f)))
+    }
     val outlineWidth=with(LocalDensity.current) { 4.dp.toPx() }
-    Row(modifier.then(if (!folder) Modifier.plate(base) else Modifier.height(84.dp).drawWithCache {
+    Row(modifier.then(if (!folder) Modifier.plate(base).drawWithCache {
+        onDrawBehind {
+            drawPath(tabIndicatorPath(position,size.width/items.size,items.lastIndex,indicator.seconds,expand),mix(Color.Yellow,Color(0xff80c800),Motion.color(indicator.seconds)))
+        }
+    } else Modifier.height(84.dp).drawWithCache {
         onDrawBehind {
             val y=size.height-8.5.dp.toPx()
             drawLine(Color.Black,Offset(7.5.dp.toPx(),y),Offset(size.width-7.5.dp.toPx(),y),3.dp.toPx(),StrokeCap.Round)
@@ -37,9 +48,10 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
         horizontalArrangement=Arrangement.spacedBy(if(folder)3.5.dp else 0.dp), verticalAlignment=Alignment.Bottom) {
         items.forEachIndexed { index, title ->
             val selected=selectedIndex==index
+            val visualIndex=if(rtl)items.lastIndex-index else index
             val source=remember { MutableInteractionSource() }
             val hovered by source.collectIsHoveredAsState()
-            val feedback=rememberFeedback(source,selected && !folder,true)
+            val feedback=rememberFeedback(source,false,true)
             val rise by animateFloatAsState(if(selected)0f else 7f,tween(160,easing=CubicBezierEasing(0f,0f,.58f,1f)))
             val emphasis by animateFloatAsState(if(selected)1f else 0f,tween(160,easing=CubicBezierEasing(0f,0f,.58f,1f)))
             Box(Modifier.weight(1f).heightIn(min=if(folder)78.dp else 40.dp).semantics { this.selected=selected }
@@ -63,21 +75,41 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
                             drawPath(shape,Color.Black,style=Stroke(2.5.dp.toPx()))
                             val lip=Path().apply {addRoundRect(RoundRect(rect.deflate(3.dp.toPx()),CornerRadius(15.dp.toPx()),CornerRadius(15.dp.toPx()),CornerRadius.Zero,CornerRadius.Zero))}
                             clipRect(bottom=top+22.dp.toPx()) { drawPath(lip,Brush.verticalGradient(listOf(Color.White.copy(alpha=.12f),Color.Transparent),startY=top,endY=top+22.dp.toPx()),style=Stroke(2.dp.toPx())) }
-                        } else if(feedback.highlight>0f) {
-                            val outset=if(feedback.release<0)size.minDimension*.15f*Motion.pulse(feedback.seconds) else 0f
-                            scale(density,density,pivot=Offset.Zero) {
-                                drawPath(skewTabPath(Rect(-1f,-1f,size.width/density+1,size.height/density+1),outset/density),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
-                            }
+                        } else if(!selected && feedback.highlight>0f) {
+                            drawPath(tabIndicatorPath(visualIndex.toFloat(),size.width,items.lastIndex,feedback.seconds,expand && feedback.release<0,visualIndex),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
                         }
                     }
                 }.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }
+                .then(if(folder)Modifier else Modifier.drawWithCache {
+                    val ink=Paint().apply { colorFilter=ColorFilter.tint(Color.Black) }
+                    onDrawWithContent {
+                        val shape=tabIndicatorPath(position,size.width,items.lastIndex,indicator.seconds,expand,visualIndex)
+                        clipPath(shape,ClipOp.Difference) { this@onDrawWithContent.drawContent() }
+                        clipPath(shape) {
+                            // Repaint only the text covered by the moving indicator, including partial glyphs.
+                            drawContext.canvas.saveLayer(Rect(Offset.Zero,size),ink)
+                            this@onDrawWithContent.drawContent()
+                            drawContext.canvas.restore()
+                        }
+                    }
+                })
                 .padding(horizontal=if(folder)12.dp else 20.dp).padding(top=if(folder)rise.dp else 0.dp),contentAlignment=Alignment.Center) {
                 val style=LocalTextStyle.current.copy(fontSize=if(folder)28.sp else 14.sp,letterSpacing=0.sp,
-                    fontWeight=if(folder)FontWeight.Bold else FontWeight.Normal,color=mix(if(folder)mix(Color(0xffb7b8b8),Color.Black,emphasis) else if(selected)Color.Black else Color.White,Color.Black,feedback.highlight))
+                    fontWeight=if(folder)FontWeight.Bold else FontWeight.Normal,color=mix(if(folder)mix(Color(0xffb7b8b8),Color.Black,emphasis) else Color.White,Color.Black,if(!folder && selected)0f else feedback.highlight))
                 if(folder && emphasis<1f) BasicText(title,modifier=Modifier.clearAndSetSemantics {},style=style.copy(color=Color.Black.copy(alpha=(1-emphasis)*(1-feedback.highlight)),drawStyle=Stroke(outlineWidth)),maxLines=1,overflow=TextOverflow.Ellipsis)
                 BasicText(title,style=style,maxLines=1,overflow=TextOverflow.Ellipsis)
             }
         }
+    }
+}
+
+private fun DrawScope.tabIndicatorPath(position:Float,tabWidth:Float,lastIndex:Int,seconds:Float,expand:Boolean,originIndex:Int=0):Path {
+    val width=tabWidth/density;val height=size.height/density
+    val left=(position-originIndex)*width
+    val outset=if(expand)minOf(width,height)*.15f*Motion.pulse(seconds) else 0f
+    return skewTabPath(Rect(left-1f,-1f,left+width+1f,height+1f),outset,
+        roundStart=(1-position).coerceIn(0f,1f),roundEnd=(position-lastIndex+1).coerceIn(0f,1f)).apply {
+        transform(Matrix().apply { scale(density,density) })
     }
 }
 
