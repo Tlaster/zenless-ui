@@ -47,6 +47,24 @@ internal fun DrawScope.layeredPlate(fill: Color, edge: Color, radius: Float, fac
         Brush.verticalGradient(listOf(mix(edge, Color.White, .2f), edge), endY = 3.dp.toPx()), style = Stroke(1.dp.toPx()))
 }
 
+internal fun DrawScope.buttonShell(fill:Color,edge:Color,round:Boolean,pattern:Boolean) {
+    val bounds=Rect(.5.dp.toPx(),.5.dp.toPx(),size.width-.5.dp.toPx(),size.height)
+    val radius=if(round)bounds.minDimension/2 else 6.dp.toPx()
+    val inset=size.minDimension*.0835f
+    val face=roundedPath(bounds.deflate(inset),radius-inset)
+    drawPath(roundedPath(bounds,radius),edge)
+    drawPath(face,fill)
+    val circular=size.width<size.height*1.1f
+    drawPath(roundedPath(bounds.deflate(.8.dp.toPx()),radius-.8.dp.toPx()),Brush.linearGradient(
+        0f to Color(0xff3d3d3d),(if(circular).6f else .67f) to Color(0xff3d3d3d),1f to edge,
+        end=Offset(size.width*(if(circular).22f else .0265f),size.height*.672f)),style=Stroke(1.6.dp.toPx()))
+    if(pattern)clipPath(face) {
+        if(fill==Color.Black)scale(density*.08f,density*.08f,pivot=Offset.Zero) {
+            translate(-55f,-24f) { drawContext.canvas.drawRect(Rect(55f,24f,55f+size.width/(density*.08f),24f+size.height/(density*.08f)),backCheckerPaint) }
+        } else checker(checkerPaint(mix(fill,Color.White,.06f)))
+    }
+}
+
 private val headerContour by lazy {
     val points=mutableListOf(Offset(42f,1f))
     fun line(x:Float,y:Float) { points.add(Offset(x,y)) }

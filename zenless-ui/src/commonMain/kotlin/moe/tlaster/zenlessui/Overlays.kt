@@ -302,17 +302,11 @@ public fun ZenlessAlert(
 
 @Composable
 private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,narrow:Boolean,onClick:()->Unit) {
-    val source=remember { MutableInteractionSource() }
-    val feedback=rememberFeedback(source,false,enabled)
-    Box(Modifier.width(width).heightIn(min=56.dp).plate(feedback).pointerClick(enabled,source,onClick=onClick),contentAlignment=Alignment.Center) {
-        CompositionLocalProvider(LocalInk provides mix(Color.White,Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=if(narrow)16.sp else 23.sp,letterSpacing=0.sp,textAlign=TextAlign.Center)) {
-            ZenlessText(text,Modifier.padding(start=58.dp,end=32.dp),maxLines=1)
-        }
-        Box(Modifier.align(Alignment.CenterStart).padding(start=2.dp).size(50.dp).drawWithCache { onDrawBehind {
-            drawCircle(Color(0xff060606).copy(alpha=1-feedback.highlight))
-            drawCircle(Color(0xff303030).copy(alpha=1-feedback.highlight),radius=size.width/2-2.dp.toPx(),style=Stroke(4.dp.toPx()))
-            drawCircle(mix(if(confirm)Color(0xff00d127) else Color(0xffec1000),Color.Black,feedback.highlight),16.dp.toPx())
-        }},contentAlignment=Alignment.Center) { Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp),mix(Color.Black,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)) }
+    ZenlessButton(onClick,Modifier.width(width).heightIn(min=56.dp),
+        tone=if(confirm)ZenlessTone.Success else ZenlessTone.Danger,size=ZenlessSize.Extra,enabled=enabled,
+        leadingIcon={Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp))},
+    ) {
+        CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=if(narrow)16.sp else 24.sp)) { ZenlessText(text,maxLines=1) }
     }
 }
 

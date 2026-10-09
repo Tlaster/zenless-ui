@@ -79,7 +79,7 @@ ZenlessButton(onClick = { /* navigate */ }, leadingIcon = {
 }
 ```
 
-Filled buttons with a leading icon keep a dark plate and white text; `tone` selects the fixed color of the left badge. Disabled text is `#565657`, and the badge retains a dim version of its color while the shell and checker texture remain unchanged. Leading badges stay at the left edge, with bold italic platform-default text centered in the remaining space.
+All general button variants and standalone icon buttons share the gray shell and state text colors: white when enabled, `#565657` when disabled, and black while held. Filled buttons with a leading icon keep a dark plate; `tone` selects the fixed color of the left badge. The disabled badge retains a dim version of its color while the shell and checker texture remain unchanged. Leading badges stay at the left edge, with bold italic platform-default text centered in the remaining space. Alert actions reuse this same `ZenlessButton` with `leadingIcon`.
 
 ## Build
 

@@ -38,6 +38,11 @@ class VisualTest {
         val disabled=onNodeWithTag("disabled-leading");val enabled=onNodeWithTag("enabled-leading")
         val off=disabled.captureToImage().toPixelMap();val on=enabled.captureToImage().toPixelMap()
         assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
+        assertEquals(Color(0xff3d3d3d),on[300,2],"The upper bevel keeps the reference brightness")
+        for((y,left,right) in listOf(Triple(11,24,462),Triple(21,13,472),Triple(41,3,483),Triple(58,1,486),Triple(91,11,475),Triple(111,35,452))) {
+            val edge=(0 until on.width).filter { on[it,y].red>15/255f }
+            assertTrue(kotlin.math.abs(edge.first()-left)<=1 && kotlin.math.abs(edge.last()-right)<=1,"Reference shell contour at row $y")
+        }
         assertEquals(Color(0xffff2b00),on[58,32],"Enabled badge red")
         assertEquals(Color(0xff5a3e00),off[58,32],"Disabled badge keeps its dim amber")
         for(y in 14..24)for(x in 270..360)assertEquals(on[x,y],off[x,y],"The same texture remains visible")
@@ -135,9 +140,12 @@ class VisualTest {
         mainClock.advanceTimeBy(16)
         onNodeWithTag("button-0-0").assertHeightIsEqualTo(40.dp).assertWidthIsEqualTo(120.dp)
         val pixels=onNodeWithTag("button-0-1").captureToImage().toPixelMap()
-        assertTrue(pixels[60,2].blue > .9f && pixels[60,2].red < .1f,"Primary edge must retain its semantic blue")
-        assertTrue(pixels[60,4].red < .02f && pixels[60,4].blue < .02f,"Enabled plate has a black separator at four units")
+        assertTrue(kotlin.math.abs(pixels[60,2].blue-pixels[60,2].red)<.01f,"Every tone shares the gray shell")
         val neutral=onNodeWithTag("button-0-0").captureToImage().toPixelMap()
+        for(row in 0..3)for(column in 0..5) {
+            val button=onNodeWithTag("button-$row-$column").captureToImage().toPixelMap()
+            for((x,y) in listOf(60 to 1,1 to 20,60 to 39))assertEquals(neutral[x,y],button[x,y],"Tone, variant and disabled state preserve the common rim")
+        }
         val select=onNodeWithTag("select").captureToImage().toPixelMap()
         assertTrue(neutral[60,20].red<=9/255f,"Neutral button uses the reference's subtle checker")
         assertEquals(select[180,31],select[186,31],"The texture repeats every six units")
