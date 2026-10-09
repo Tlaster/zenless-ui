@@ -18,7 +18,7 @@ private val checkerTile by lazy {
         intArrayOf(12,11,5,3,5,11),intArrayOf(4,5,10,12,11,6),intArrayOf(0,3,12,15,12,4),
         intArrayOf(3,5,11,12,11,5),intArrayOf(12,11,6,4,5,10),intArrayOf(15,12,4,0,3,12))
     val paint=Paint().apply { isAntiAlias=false }
-    for(y in 0..5)for(x in 0..5) { paint.color=Color.White.copy(alpha=coverage[y][x]/15f);canvas.drawRect(Rect(x.toFloat(),y.toFloat(),x+1f,y+1f),paint) }
+    for(y in 0..5)for(x in 0..5) { paint.color=Color.White.copy(alpha=coverage[y][(x+4)%6]/15f);canvas.drawRect(Rect(x.toFloat(),y.toFloat(),x+1f,y+1f),paint) }
     image
 }
 
@@ -29,7 +29,12 @@ internal fun checkerPaint(color:Color)=Paint().apply {
 }
 
 internal fun DrawScope.checker(paint:Paint,width:Float=size.width,height:Float=size.height) {
-    scale(density,density,pivot=Offset.Zero) { drawContext.canvas.drawRect(Rect(0f,0f,width/density,height/density),paint) }
+    val w=width/density;val h=height/density
+    // Center the repeated tile so resizing a plate preserves its texture phase.
+    val x=(w-6)/2%6;val y=(h-6)/2%6
+    scale(density,density,pivot=Offset.Zero) {
+        translate(x,y) { drawContext.canvas.drawRect(Rect(-x,-y,w-x,h-y),paint) }
+    }
 }
 
 internal fun DrawScope.layeredPlate(fill: Color, edge: Color, radius: Float, faceInset: Float, reflection: Boolean) {

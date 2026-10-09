@@ -16,6 +16,7 @@ import org.jetbrains.skia.Image
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class VisualTest {
@@ -58,7 +59,7 @@ class VisualTest {
                     ZenlessCloseButton({},"Close",Modifier.offset(390.dp,330.dp))
                     ZenlessCard(Modifier.offset(64.dp,430.dp).size(240.dp,130.dp)) {}
                     ZenlessTextField("",{},Modifier.offset(350.dp,430.dp).width(360.dp))
-                    ZenlessSelect(listOf("",""),0,{},Modifier.offset(350.dp,490.dp).width(360.dp))
+                    ZenlessSelect(listOf("",""),0,{},Modifier.offset(350.dp,490.dp).width(360.dp).testTag("select"))
                     ZenlessProgress(.65f,Modifier.offset(64.dp,610.dp).width(600.dp))
                     tones.forEachIndexed { index,tone -> ZenlessBadge("",Modifier.offset((64+index*100).dp,670.dp).size(80.dp,30.dp),tone) }
                     ZenlessTabs(listOf("","",""),0,{},Modifier.offset(64.dp,740.dp).width(450.dp))
@@ -71,6 +72,10 @@ class VisualTest {
         val pixels=onNodeWithTag("button-0-1").captureToImage().toPixelMap()
         assertTrue(pixels[60,2].blue > .9f && pixels[60,2].red < .1f,"Primary edge must retain its semantic blue")
         assertTrue(pixels[60,4].red < .02f && pixels[60,4].blue < .02f,"Enabled plate has a black separator at four units")
+        val neutral=onNodeWithTag("button-0-0").captureToImage().toPixelMap()
+        val select=onNodeWithTag("select").captureToImage().toPixelMap()
+        assertEquals(neutral[60,20],select[180,31],"Different plate sizes keep their texture centered")
+        assertEquals(select[180,31],select[186,31],"The texture repeats every six units")
         save("components-calibrated")
         // Compare sampled contours; cubic getBounds also includes control points outside the curve.
         val resting=headerPath(Rect(0f,0f,90f,60f),true,.001f).getBounds()
