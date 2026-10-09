@@ -209,10 +209,14 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
     }
 }
 
-internal enum class Mark { Check, Minus, Close, Back, Down }
+internal enum class Mark { Check, Minus, Close, Back, Down, Dropdown }
 @Composable
 internal fun Mark(kind: Mark, modifier: Modifier, color: Color = LocalInk.current) {
     Canvas(modifier) {
+        if (kind == Mark.Dropdown) {
+            scale(size.width / 16f, size.height / 13f, Offset.Zero) { drawPath(dropdownArrow, color) }
+            return@Canvas
+        }
         val p = Path()
         when (kind) {
             Mark.Check -> { p.moveTo(size.width * .2f, size.height * .5f); p.lineTo(size.width * .43f, size.height * .72f); p.lineTo(size.width * .8f, size.height * .28f) }
@@ -220,12 +224,21 @@ internal fun Mark(kind: Mark, modifier: Modifier, color: Color = LocalInk.curren
             Mark.Close -> { p.moveTo(size.width * .25f, size.height * .25f); p.lineTo(size.width * .75f, size.height * .75f); p.moveTo(size.width * .75f, size.height * .25f); p.lineTo(size.width * .25f, size.height * .75f) }
             Mark.Back -> { p.moveTo(size.width * .65f, size.height * .2f); p.lineTo(size.width * .3f, size.height * .5f); p.lineTo(size.width * .65f, size.height * .8f) }
             Mark.Down -> { p.moveTo(size.width * .2f, size.height * .35f); p.lineTo(size.width * .5f, size.height * .65f); p.lineTo(size.width * .8f, size.height * .35f) }
+            Mark.Dropdown -> Unit
         }
         if(kind==Mark.Down) {
             p.reset();p.moveTo(size.width*.15f,size.height*.32f);p.lineTo(size.width*.85f,size.height*.32f);p.lineTo(size.width*.5f,size.height*.7f);p.close()
             drawPath(p,color)
         } else drawPath(p, color, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
+}
+
+private val dropdownArrow = Path().apply {
+    moveTo(2.7f, 0f); lineTo(13.3f, 0f)
+    cubicTo(15.3f, 0f, 16.4f, 1.8f, 15.7f, 3.3f)
+    lineTo(9.5f, 12.5f); quadraticTo(9.1f, 13f, 8f, 13f)
+    quadraticTo(6.9f, 13f, 6.5f, 12.5f); lineTo(.3f, 3.3f)
+    cubicTo(-.4f, 1.8f, .7f, 0f, 2.7f, 0f); close()
 }
 
 @Composable

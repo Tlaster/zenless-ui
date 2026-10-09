@@ -131,10 +131,12 @@ public fun ZenlessSelect(
         Row(Modifier.fillMaxWidth().heightIn(min=size.height.dp).onGloballyPositioned { width=it.size.width; anchor=it.boundsInWindow().roundToIntRect() }
             .semantics { if(label.isNotEmpty())contentDescription=label;stateDescription=options[selectedIndex] }
             .plate(feedback,fill=if(enabled)Color.Black else Color(0xff080808),edge=if(enabled)Color(0xff323232) else Color(0xff191919),enabled=enabled,input=true)
-            .pointerClick(enabled,source) { expanded=!expanded }.padding(start=size.horizontalPadding.dp,end=(size.horizontalPadding*.7f).dp),verticalAlignment=Alignment.CenterVertically) {
+            .pointerClick(enabled,source) { expanded=!expanded }.padding(start=size.horizontalPadding.dp),verticalAlignment=Alignment.CenterVertically) {
             CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff737373),Color.Black,feedback.highlight)) {
                 ZenlessText(options[selectedIndex],Modifier.weight(1f),maxLines=1)
-                Mark(Mark.Down,Modifier.padding(start=7.dp).size(size.iconSize.dp))
+                Box(Modifier.size(size.height.dp),contentAlignment=Alignment.Center) {
+                    Mark(Mark.Dropdown,Modifier.size((16f*size.height/62).dp,(13f*size.height/62).dp),if(enabled)LocalInk.current else Color(0xff787879))
+                }
             }
         }
     }

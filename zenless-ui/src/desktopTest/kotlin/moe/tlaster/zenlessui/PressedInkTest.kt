@@ -183,7 +183,7 @@ class PressedInkTest {
         select.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
         assertEquals(Color.White,onNodeWithText("Current").ink())
         val pixels=select.captureToImage().toPixelMap()
-        assertEquals(Color.White,pixels[pixels.width-29,pixels.height/2],"Select keeps its white arrow while pressed")
+        assertEquals(Color.White,pixels[pixels.width-26,pixels.height/2],"Select keeps its white arrow while pressed")
         select.save("held-select")
         select.performTouchInput { up() };mainClock.advanceTimeBy(300)
         val other=onNodeWithText("Other")
