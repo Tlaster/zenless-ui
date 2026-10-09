@@ -46,7 +46,7 @@ class PressedInkTest {
                         val ink=zenlessContentColor
                         Canvas(Modifier.size(20.dp)) { drawRect(ink) }
                     }
-                    ZenlessButton({error("Disabled button activated")},Modifier.testTag("disabled"),enabled=false) { ZenlessText("Disabled") }
+                    ZenlessButton({error("Disabled button activated")},Modifier.testTag("disabled"),enabled=false) { ZenlessText("Disabled",style=ZenlessTextStyle.Caption) }
                     ZenlessButton({},Modifier.width(260.dp).testTag("leading-button"),size=ZenlessSize.Extra,leadingIcon={
                         val ink=zenlessContentColor
                         Canvas(Modifier.size(12.dp).testTag("leading-glyph")) { drawRect(ink) }
@@ -71,7 +71,8 @@ class PressedInkTest {
             if(tone==ZenlessTone.Accent && variant==ZenlessButtonVariant.Filled) {
                 assertTrue(text.ink().green>.7f && text.ink().red>.5f && text.ink().blue==0f,"Accent text resumes its breathing color")
             } else assertEquals(restingInk,text.ink(),"$key released text")
-            assertEquals(restingCaption,caption.ink(),"$key released caption")
+            if(tone==ZenlessTone.Accent && variant==ZenlessButtonVariant.Filled) assertEquals(text.ink(),caption.ink(),"Accent captions follow their button")
+            else assertEquals(restingCaption,caption.ink(),"$key released caption")
             if(tone==ZenlessTone.Accent && variant==ZenlessButtonVariant.Filled) assertEquals(text.ink(),icon.centerPixel(),"Accent caller icon follows its text")
             else assertEquals(restingIcon,icon.centerPixel(),"$key released icon")
         }
@@ -84,6 +85,7 @@ class PressedInkTest {
         assertEquals(Color.White,iconButton.centerPixel())
         val disabled=onNodeWithText("Disabled")
         val disabledInk=disabled.ink()
+        assertEquals(Color(0xff565657),disabledInk,"Disabled captions inherit the button's dim ink")
         disabled.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
         assertEquals(disabledInk,disabled.ink())
         disabled.performTouchInput { up() }
@@ -101,7 +103,7 @@ class PressedInkTest {
         assertTrue(first!=glyph.centerPixel(),"Leading glyph must keep breathing")
         assertEquals(plate[plate.width-12,plate.height/2],glyph.centerPixel(),"Leading glyph stays in phase")
         leading.performTouchInput { up() };mainClock.advanceTimeBy(240)
-        assertEquals(Color.White,glyph.centerPixel())
+        assertEquals(Color.Black,glyph.centerPixel())
     }
 
     @Test fun navigationAndSelectButtonsUseBlackInkBeforeSelectionChanges() = runDesktopComposeUiTest(width=1000,height=760) {

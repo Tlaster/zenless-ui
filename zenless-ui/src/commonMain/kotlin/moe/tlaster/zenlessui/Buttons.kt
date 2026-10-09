@@ -1,11 +1,9 @@
 package moe.tlaster.zenlessui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +17,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -29,16 +29,25 @@ internal fun Modifier.pointerClick(enabled: Boolean, source: MutableInteractionS
 internal fun Modifier.plate(
     feedback: Feedback, fill: Color = Color.Black, edge: Color = Color(0xff333333),
     round: Boolean = true, pattern: Boolean = true, expand: Boolean = true, highlightFill: Boolean = true,
-    enabled: Boolean = true, input: Boolean = false,
+    enabled: Boolean = true, input: Boolean = false, button: Boolean = false,
 ): Modifier = onGloballyPositioned { feedback.visible = !it.boundsInWindow().isEmpty }.drawWithCache {
     val radius = if (round) size.minDimension / 2 else 6.dp.toPx()
-    val faceInset = (if (input || !enabled) 4 else 5).dp.toPx()
+    val faceInset = if(button)size.minDimension*.1f else (if (input || !enabled) 4 else 5).dp.toPx()
     val face = roundedPath(Rect(Offset.Zero, size).deflate(faceInset), radius - faceInset)
     val checks = checkerPaint(mix(fill, Color.White, if (!enabled && input) .02f else .06f))
     onDrawBehind {
-        layeredPlate(fill, edge, radius, faceInset, !input && enabled)
+        if(button) {
+            drawPath(roundedPath(Rect(Offset.Zero,size),radius),Color.Black)
+            drawPath(roundedPath(Rect(Offset.Zero,size).deflate(1.dp.toPx()),radius-1.dp.toPx()),edge)
+            drawPath(face,fill)
+            drawPath(roundedPath(Rect(Offset.Zero,size).deflate(1.75.dp.toPx()),radius-1.75.dp.toPx()),Brush.linearGradient(listOf(mix(edge,Color.White,.11f),edge),end=Offset(size.width,size.height*.6f)),style=Stroke(1.5.dp.toPx()))
+        } else layeredPlate(fill, edge, radius, faceInset, !input && enabled)
         if (pattern) clipPath(face) {
-            translate(faceInset, faceInset) { checker(checks,size.width-2*faceInset,size.height-2*faceInset) }
+            if(button && fill==Color.Black) {
+                scale(density*.0801f,density*.0801f,pivot=Offset.Zero) {
+                    drawContext.canvas.drawRect(Rect(0f,0f,size.width/(density*.0801f),size.height/(density*.0801f)),backCheckerPaint)
+                }
+            } else translate(faceInset, faceInset) { checker(checks,size.width-2*faceInset,size.height-2*faceInset) }
         }
         val amount = feedback.highlight
         if (amount > 0f) {
@@ -69,7 +78,8 @@ public fun ZenlessButton(
     val source = remember { MutableInteractionSource() }
     val feedback = rememberFeedback(source, false, enabled && !loading, ambient = tone == ZenlessTone.Accent || selected)
     val semantic = Palette.tone(tone)
-    val colored = tone !in listOf(ZenlessTone.Neutral, ZenlessTone.Accent)
+    val badgeButton = leadingIcon!=null && variant==ZenlessButtonVariant.Filled
+    val colored = !badgeButton && tone !in listOf(ZenlessTone.Neutral, ZenlessTone.Accent)
     val fill = when {
         !enabled || loading -> if (variant == ZenlessButtonVariant.Plain) Color(0xff999999) else if (variant == ZenlessButtonVariant.Hollow) Color(0xff737373) else Color.Black
         variant == ZenlessButtonVariant.Hollow -> Color.Black
@@ -77,12 +87,13 @@ public fun ZenlessButton(
         colored -> semantic
         else -> Color.Black
     }
-    val edge = if(selected && enabled)Palette.signal else if (colored) semantic else Color(0xff333333)
+    val edge = if(selected && enabled)Palette.signal else if (colored) semantic else Color(0xff262626)
     val baseInk = when {
-        !enabled -> if (variant == ZenlessButtonVariant.Filled) Color(0xff666666) else Color(0xff2e2e2e)
+        !enabled -> if (variant == ZenlessButtonVariant.Filled) Color(0xff565657) else Color(0xff2e2e2e)
         loading -> Color(0xffb0b0b0)
         variant == ZenlessButtonVariant.Plain -> Color.Black
         variant == ZenlessButtonVariant.Hollow -> Color.White
+        badgeButton -> Color.White
         tone == ZenlessTone.Accent -> mix(Palette.signal, Color(0xff91bc00), Motion.signalColor(feedback.seconds))
         tone == ZenlessTone.Primary -> Color.White
         colored -> Color.Black
@@ -93,17 +104,26 @@ public fun ZenlessButton(
     val padding = when (size) { ZenlessSize.Mini -> 17; ZenlessSize.Small -> 23; ZenlessSize.Default -> 29; ZenlessSize.Large -> 47; ZenlessSize.Extra -> 59 }
     val font = when (size) { ZenlessSize.Mini, ZenlessSize.Small -> 12; ZenlessSize.Default -> 14; ZenlessSize.Large -> 16; ZenlessSize.Extra -> 18 }
     Box(modifier.heightIn(min = height.dp).semantics { this.selected = selected; if (loading) progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }
-        .plate(feedback, fill, edge, round, enabled = enabled && !loading).drawWithCache { onDrawBehind {
+        .plate(feedback, fill, edge, round, enabled = enabled && !loading,button=variant==ZenlessButtonVariant.Filled && !colored).drawWithCache { onDrawBehind {
             if(selected && enabled && !loading && !feedback.active)drawPath(roundedPath(Rect(Offset.Zero,this.size).deflate(2.5.dp.toPx()),(if(round)this.size.minDimension/2 else 6.dp.toPx())-2.5.dp.toPx()),mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),style=Stroke(3.dp.toPx()))
-        }}.pointerClick(enabled && !loading, source, onClick = onClick).padding(horizontal = padding.dp),
+        }}.pointerClick(enabled && !loading, source, onClick = onClick),
         contentAlignment = Alignment.Center) {
-        CompositionLocalProvider(LocalInk provides ink, LocalButtonHighlight provides feedback.highlight, LocalTextStyle provides LocalTextStyle.current.copy(fontSize = font.sp, letterSpacing = 1.sp)) {
-            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-                if(leadingIcon!=null) Box(Modifier.size((height*.57f).dp).background(Color.Black,CircleShape),contentAlignment=Alignment.Center) {
-                    val iconInk=mix(if(enabled)Color.White else Palette.muted,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)
-                    CompositionLocalProvider(LocalInk provides iconInk,LocalButtonHighlight provides 0f) { leadingIcon() }
+        CompositionLocalProvider(LocalInk provides ink, LocalButtonContent provides true, LocalTextStyle provides LocalTextStyle.current.copy(
+            fontSize = if(leadingIcon!=null)(height*.46f).sp else font.sp, letterSpacing = if(leadingIcon!=null)0.sp else 1.sp,
+            fontWeight=if(leadingIcon!=null)FontWeight.Bold else FontWeight.Normal,fontStyle=if(leadingIcon!=null)FontStyle.Italic else FontStyle.Normal)) {
+            Row(Modifier.graphicsLayer { alpha = if (loading) 0f else 1f }.padding(start=if(leadingIcon!=null)height.dp else padding.dp,end=if(leadingIcon!=null)(height/3f).dp else padding.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,content=content)
+            if(leadingIcon!=null) Box(Modifier.matchParentSize().graphicsLayer { alpha=if(loading)0f else 1f },contentAlignment=Alignment.CenterStart) {
+                val badge=when(tone) { ZenlessTone.Neutral->Color.White;ZenlessTone.Danger->Color(0xffff2b00);ZenlessTone.Warning->Color(0xffffb000);else->semantic }
+                Box(Modifier.fillMaxHeight().aspectRatio(1f).drawWithCache { onDrawBehind {
+                    val rest=1-feedback.highlight
+                    drawCircle(Color.Black.copy(alpha=rest))
+                    drawCircle(Color(0xff262626).copy(alpha=rest),radius=this.size.minDimension/2-1.dp.toPx())
+                    drawCircle(Brush.linearGradient(listOf(Color(0xff3e3e3e).copy(alpha=rest),Color(0xff262626).copy(alpha=rest)),end=Offset(this.size.width,this.size.height*.6f)),radius=this.size.minDimension/2-1.75.dp.toPx(),style=Stroke(1.5.dp.toPx()))
+                    drawCircle(Color.Black.copy(alpha=rest),radius=this.size.minDimension*.4f)
+                    drawCircle(mix(if(enabled)badge else mix(Color.Black,badge,.353f),Color.Black,feedback.highlight),radius=this.size.minDimension*.28f)
+                } },contentAlignment=Alignment.Center) {
+                    CompositionLocalProvider(LocalInk provides mix(Color.Black,mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)),feedback.highlight)) { leadingIcon() }
                 }
-                content()
             }
             if (loading) ZenlessSpinner(Modifier.matchParentSize())
         }
@@ -116,7 +136,7 @@ public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, mo
     val feedback = rememberFeedback(source, false, enabled)
     Box(modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp).semantics { this.contentDescription = contentDescription }
         .plate(feedback, enabled = enabled).pointerClick(enabled, source, onClick = onClick).padding(9.dp), contentAlignment = Alignment.Center) {
-        CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Palette.muted,Color.Black,feedback.highlight),LocalButtonHighlight provides feedback.highlight) { content() }
+        CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff565657),Color.Black,feedback.highlight),LocalButtonContent provides true) { content() }
     }
 }
 

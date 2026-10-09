@@ -17,4 +17,8 @@ Compose Multiplatform UI 库，首版 `0.1.0`。提供完整深色主题、固�
 
 Gallery 中可以分类浏览、操作示例、修改参数并复制对应 Kotlin 代码。窄屏采用分类列表与详情两级布局，宽屏采用侧栏。使用平台默认字体，Linux 系统需要安装支持中文的系统字体。
 
+带左侧图标的 Filled 按钮保留深色底板与白色文字，`tone` 选择圆形图标底座的预设颜色。禁用文字为 `#565657`，图标底座保留变暗的原色，外壳与棋盘纹理保持不变。
+
+快速调整 UI 时，推送只运行桌面组件/Gallery 测试和 Web 构建，并自动更新在线 Gallery。完整的各平台打包、Android/iOS 模拟器检查改为手动运行 **Build and verify**，发布版本前再执行。
+
 MIT 开源；上游版权声明见 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)。

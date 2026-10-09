@@ -2,7 +2,7 @@
 
 A fixed dark-theme UI library for Compose Multiplatform, with a Chinese / English interactive gallery. Layered plates, geometric tabs, a yellow-green selection pulse, release flashes, and full-width alerts.
 
-[Web gallery](https://tlaster.github.io/zenless-ui/) · [Builds and verification](https://github.com/Tlaster/zenless-ui/actions/workflows/verify.yml) · [中文说明](docs/README.zh-CN.md)
+[Web gallery](https://tlaster.github.io/zenless-ui/) · [UI checks](https://github.com/Tlaster/zenless-ui/actions/workflows/gallery.yml) · [Platform builds](https://github.com/Tlaster/zenless-ui/actions/workflows/verify.yml) · [中文说明](docs/README.zh-CN.md)
 
 Version **0.1.0**. Maven Central publication is configured; the first upload requires the repository owner's Central namespace, token and signing key. Do not assume the coordinate is available until a successful Publish workflow is linked in a release.
 
@@ -79,6 +79,8 @@ ZenlessButton(onClick = { /* navigate */ }, leadingIcon = {
 }
 ```
 
+Filled buttons with a leading icon keep a dark plate and white text; `tone` selects the fixed color of the left badge. Disabled text is `#565657`, and the badge retains a dim version of its color while the shell and checker texture remain unchanged. Leading badges stay at the left edge, with bold italic platform-default text centered in the remaining space.
+
 ## Build
 
 Toolchain: Compose Multiplatform 1.12.1, Kotlin 2.4.10, AGP 9.4.1, Gradle 9.8.0, JDK 25. Android compilation uses SDK 37.0. Set `ANDROID_HOME` or an untracked `local.properties` with `sdk.dir`. Use the checked-in wrapper (`gradlew.bat` on Windows).
@@ -97,7 +99,7 @@ Toolchain: Compose Multiplatform 1.12.1, Kotlin 2.4.10, AGP 9.4.1, Gradle 9.8.0,
 
 Open `iosApp/iosApp.xcodeproj` on an Apple Silicon Mac and select `iosApp` and an ARM64 iPhone simulator. For devices, select your development team in Xcode. The Xcode build phase builds and links the shared Kotlin framework. No Intel simulator target is included.
 
-The build workflow uploads APK, native packages, Web assets and the simulator app. It also produces desktop test reports and captures launch screenshots from Android and iOS simulators. The Pages deployment uses the tested Web artifact. See [release instructions](docs/RELEASING.md) for Maven Central.
+During UI iteration, pushes run **UI checks and Gallery**: desktop component/Gallery tests and a Web build, followed by Pages deployment. **Build and verify** is manual and uploads APK, native packages, Web assets and the simulator app, including desktop reports and Android/iOS launch screenshots. Run that full workflow before a release. See [release instructions](docs/RELEASING.md) for Maven Central.
 
 ## Design and attribution
 

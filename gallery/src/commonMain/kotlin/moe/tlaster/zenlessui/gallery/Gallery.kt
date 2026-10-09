@@ -184,6 +184,12 @@ internal fun buttonExample(text: String, tone: ZenlessTone, size: ZenlessSize, v
             ZenlessIconButton({record("Icon")},tr("Icon button","图标按钮")) { CallerIcon() }
         }
     }
+    Preview(tr("Enabled / disabled", "启用 / 禁用")) {
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(26.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+            ZenlessButton({},Modifier.width(244.dp).height(58.dp),tone=ZenlessTone.Warning,size=ZenlessSize.Extra,enabled=false,leadingIcon={CallerIcon()}) { ZenlessText(tr("Unavailable","暂不可用")) }
+            ZenlessButton({record(tr("Continue","继续操作"))},Modifier.width(244.dp).height(58.dp),tone=ZenlessTone.Danger,size=ZenlessSize.Extra,leadingIcon={CallerIcon()}) { ZenlessText(tr("Continue","继续操作")) }
+        }
+    }
     Preview(tr("Parameters", "参数")) {
         ZenlessTextField(text, { text = it }, label = tr("Label", "文字"))
         ZenlessSelect(ZenlessTone.entries.map { it.name }, tone, { tone = it }, label = "Tone")

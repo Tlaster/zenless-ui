@@ -1,6 +1,7 @@
 package moe.tlaster.zenlessui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,6 +23,30 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class VisualTest {
+    @Test fun enabledAndDisabledLeadingButtonsAtReferenceDensity() = runDesktopComposeUiTest(width=1080,height=160) {
+        mainClock.autoAdvance=false
+        setContent { CompositionLocalProvider(LocalDensity provides Density(2f)) { ZenlessTheme {
+            Row(Modifier.fillMaxSize().background(Color.Black).padding(10.dp),horizontalArrangement=Arrangement.spacedBy(26.dp)) {
+                for(enabled in listOf(false,true)) ZenlessButton(
+                    {check(enabled)},Modifier.size(244.dp,58.dp).testTag(if(enabled)"enabled-leading" else "disabled-leading"),
+                    tone=if(enabled)ZenlessTone.Danger else ZenlessTone.Warning,size=ZenlessSize.Extra,enabled=enabled,
+                    leadingIcon={val ink=zenlessContentColor;Canvas(Modifier.size(16.dp)) { drawRect(ink) }},
+                ) { ZenlessText(if(enabled)"继续操作" else "暂不可用") }
+            }
+        } } }
+        mainClock.advanceTimeBy(16)
+        val disabled=onNodeWithTag("disabled-leading");val enabled=onNodeWithTag("enabled-leading")
+        val off=disabled.captureToImage().toPixelMap();val on=enabled.captureToImage().toPixelMap()
+        assertEquals(Color(0xff262626),on[300,7]);assertEquals(on[300,7],off[300,7],"Disabling preserves the shell")
+        assertEquals(Color(0xffff2b00),on[58,32],"Enabled badge red")
+        assertEquals(Color(0xff5a3e00),off[58,32],"Disabled badge keeps its dim amber")
+        for(y in 14..24)for(x in 270..360)assertEquals(on[x,y],off[x,y],"The same texture remains visible")
+        save("button-states-calibrated")
+        disabled.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
+        assertEquals(off[58,32],disabled.captureToImage().toPixelMap()[58,32],"A disabled badge never pulses")
+        disabled.performTouchInput { up() }
+    }
+
     @Test fun backButtonAtReferenceDensity() = runDesktopComposeUiTest(width=188,height=128) {
         mainClock.autoAdvance=false
         setContent {
@@ -114,7 +139,7 @@ class VisualTest {
         assertTrue(pixels[60,4].red < .02f && pixels[60,4].blue < .02f,"Enabled plate has a black separator at four units")
         val neutral=onNodeWithTag("button-0-0").captureToImage().toPixelMap()
         val select=onNodeWithTag("select").captureToImage().toPixelMap()
-        assertEquals(neutral[60,20],select[180,31],"Different plate sizes keep their texture centered")
+        assertTrue(neutral[60,20].red<=9/255f,"Neutral button uses the reference's subtle checker")
         assertEquals(select[180,31],select[186,31],"The texture repeats every six units")
         save("components-calibrated")
         // Compare sampled contours; cubic getBounds also includes control points outside the curve.

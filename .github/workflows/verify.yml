@@ -1,8 +1,5 @@
 name: Build and verify
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -120,21 +117,3 @@ jobs:
             adb pull /sdcard/gallery.png gallery-android.png
       - uses: actions/upload-artifact@v4
         with: {name: verification-android, path: gallery-android.png}
-  pages:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: [web-android, desktop, ios, android-smoke]
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/download-artifact@v4
-        with: {name: gallery-web, path: web}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with: {path: web}
-      - uses: actions/deploy-pages@v4
-        id: deployment

@@ -1,0 +1,52 @@
+name: UI checks and Gallery
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gallery-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25'}
+      - uses: android-actions/setup-android@v3
+        with: {packages: platform-tools, log-accepted-android-sdk-licenses: false}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+      - run: ./gradlew :zenless-ui:desktopTest :gallery:desktopTest :gallery:wasmJsBrowserDistribution --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gallery-web
+          path: gallery/build/dist/wasmJs/productionExecutable
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-verification
+          path: |
+            verification/*.png
+            **/build/reports/tests/
+  pages:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: web
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: gallery-web, path: web}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: web}
+      - uses: actions/deploy-pages@v4
+        id: deployment
