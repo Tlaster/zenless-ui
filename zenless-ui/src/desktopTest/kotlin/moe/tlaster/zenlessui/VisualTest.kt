@@ -105,7 +105,10 @@ class VisualTest {
         assertEquals(pixels[130,45],onRoot().captureToImage().toPixelMap()[130,45],"Release restores the checker face")
         close.performTouchInput { down(center) }
         mainClock.advanceTimeBy(800)
-        close.performTouchInput { moveTo(androidx.compose.ui.geometry.Offset(-100f,-100f));up() }
+        close.performTouchInput { moveTo(androidx.compose.ui.geometry.Offset(-100f,-100f)) }
+        mainClock.advanceTimeBy(160)
+        assertTrue(onRoot().captureToImage().toPixelMap()[130,45].green>.5f,"Close stays highlighted outside")
+        close.performTouchInput { up() }
         mainClock.advanceTimeBy(240)
         runOnIdle { assertEquals(1,clicks);enabled=false }
         mainClock.advanceTimeByFrame()
@@ -189,8 +192,10 @@ class VisualTest {
         mainClock.advanceTimeBy(800)
         back.performTouchInput { moveTo(androidx.compose.ui.geometry.Offset(-100f,-100f)) }
         mainClock.advanceTimeBy(64)
-        assertEquals(red,onRoot().captureToImage().toPixelMap()[100,45],"Cancelled presses restore resting ink")
+        assertEquals(Color.Black,onRoot().captureToImage().toPixelMap()[100,45],"Moving outside keeps the held ink")
         back.performTouchInput { up() }
+        mainClock.advanceTimeBy(240)
+        assertEquals(red,onRoot().captureToImage().toPixelMap()[100,45],"Outside release restores resting ink after its flash")
     }
 
     @Test fun overlayGeometryAndDrawerScrollbar() = runDesktopComposeUiTest(width=1024,height=768) {

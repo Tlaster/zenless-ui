@@ -207,7 +207,13 @@ public fun ZenlessTooltip(text: String, modifier: Modifier = Modifier, size: Zen
                 val longPress = awaitLongPressOrCancellation(down.id)
                 if (longPress != null) {
                     context.tooltip = id
-                    do { val event = awaitPointerEvent(PointerEventPass.Initial); event.changes.forEach { it.consume() } } while (event.changes.any { it.pressed })
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == longPress.id } ?: break
+                        if ((change.position - longPress.position).getDistance() > viewConfiguration.touchSlop && context.tooltip === id) context.tooltip = null
+                        // Suppress the long-press click without taking movement away from scrolling.
+                        if (!change.pressed) { change.consume(); break }
+                    }
                 }
             }
         }

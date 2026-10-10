@@ -38,6 +38,15 @@ class InteractionTest {
         compose.runOnIdle { source.tryEmit(press); source.tryEmit(PressInteraction.Cancel(press)) }
         compose.mainClock.advanceTimeBy(64)
         compose.runOnIdle { assertEquals(0f, feedback.highlight, "Cancelled gestures must not flash") }
+        val nextPress=PressInteraction.Press(Offset.Zero)
+        compose.runOnIdle {
+            source.tryEmit(press); source.tryEmit(PressInteraction.Release(press))
+            source.tryEmit(nextPress); source.tryEmit(PressInteraction.Cancel(nextPress))
+        }
+        repeat(12) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.runOnIdle { assertEquals(0f,feedback.highlight,"A newer cancellation must discard an older release in the same frame") }
+        }
     }
 
     @Test fun selectionFeedbackDoesNotPulseOrFlashFromPointerEvents() {

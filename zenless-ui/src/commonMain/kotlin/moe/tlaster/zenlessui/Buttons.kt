@@ -93,7 +93,7 @@ public fun ZenlessButton(
     Box(modifier.heightIn(min = height.dp).semantics { this.selected = selected; if (loading) progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }
         .plate(feedback, fill, edge, round, enabled = enabled && !loading,button=true,leading=leadingIcon!=null && !loading).drawWithCache { onDrawBehind {
             if(selected && enabled && !loading && !feedback.active)drawPath(roundedPath(Rect(Offset.Zero,this.size).deflate(2.5.dp.toPx()),(if(round)this.size.minDimension/2 else 6.dp.toPx())-2.5.dp.toPx()),mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)),style=Stroke(3.dp.toPx()))
-        }}.pointerClick(enabled && !loading, source, onClick = onClick),
+        }}.buttonClick(enabled && !loading, source, onClick = onClick),
         contentAlignment = Alignment.Center, propagateMinConstraints = true) {
         CompositionLocalProvider(LocalInk provides ink, LocalButtonContent provides true, LocalTextStyle provides LocalTextStyle.current.copy(
             fontSize = font.sp, letterSpacing = 1.sp, fontWeight = FontWeight.Normal)) {
@@ -126,7 +126,7 @@ public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, mo
     val source = remember { MutableInteractionSource() }
     val feedback = rememberFeedback(source, false, enabled, buttonFeedback = true)
     Box(modifier.sizeIn(minWidth = size.height.dp, minHeight = size.height.dp).semantics { this.contentDescription = contentDescription }
-        .plate(feedback,edge=Color(0xff262626),enabled=enabled,button=true).pointerClick(enabled, source, onClick = onClick), contentAlignment = Alignment.Center) {
+        .plate(feedback,edge=Color(0xff262626),enabled=enabled,button=true).buttonClick(enabled, source, onClick = onClick), contentAlignment = Alignment.Center) {
         CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff565657),Color.Black,feedback.highlight),LocalButtonContent provides true,LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) {
             Box(Modifier.size(size.iconSize.dp),contentAlignment=Alignment.Center) { content() }
         }
@@ -191,7 +191,7 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
                 drawPath(headerPath(rect.inflate(2*unit), back, outset), mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
             }
         }
-    }.pointerClick(enabled, source) {
+    }.buttonClick(enabled, source) {
         if (!pending) { pending = true; scope.launch { delay(150); pending = false; if (currentEnabled) currentClick() } }
     }) {
         // Soften only the close mark's captured edges, preserving the plate's checker detail.

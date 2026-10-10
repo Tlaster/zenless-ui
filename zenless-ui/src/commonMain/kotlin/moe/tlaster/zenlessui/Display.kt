@@ -108,7 +108,7 @@ public fun ZenlessCollapse(title: String, expanded: Boolean, onExpandedChange: (
                 val outset=2.dp.toPx()+if(feedback.release<0)this.size.minDimension*.15f*Motion.pulse(feedback.seconds) else 0f
                 drawPath(roundedPath(Rect(Offset.Zero,this.size).inflate(outset),this.size.height/2+outset),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
             }
-        }}.semantics { stateDescription=if(expanded) "Expanded" else "Collapsed" }.pointerClick(true,source) { onExpandedChange(!expanded) }.padding(start=size.horizontalPadding.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically) {
+        }}.semantics { stateDescription=if(expanded) "Expanded" else "Collapsed" }.buttonClick(true,source) { onExpandedChange(!expanded) }.padding(start=size.horizontalPadding.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically) {
             CompositionLocalProvider(LocalInk provides mix(Color.White,Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp,letterSpacing=0.sp)) {
             ZenlessText(title, Modifier.weight(1f))
             val angle by animateFloatAsState(if (expanded) 180f else 0f, tween(160))

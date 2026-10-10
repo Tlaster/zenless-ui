@@ -4,6 +4,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.animation.core.Easing
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalWindowInfo
 import kotlin.math.abs
 
 /** Shared timing curves; attribution is recorded in THIRD_PARTY_NOTICES.md. */
@@ -53,31 +54,27 @@ internal class Feedback {
 
 @Composable
 internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolean, enabled: Boolean, ambient: Boolean = false, buttonFeedback: Boolean = false): Feedback {
-    var pressed by remember { mutableStateOf(false) }
-    var releaseCount by remember { mutableIntStateOf(0) }
-    LaunchedEffect(source, buttonFeedback) {
-        pressed=false
-        if (!buttonFeedback) return@LaunchedEffect
-        source.interactions.collect { event -> when(event) {
-            is PressInteraction.Press -> pressed=true
-            is PressInteraction.Release -> { pressed=false;releaseCount++ }
-            is PressInteraction.Cancel -> pressed=false
-        } }
-    }
+    val focused = !buttonFeedback || LocalWindowInfo.current.isWindowFocused
     val state = remember { Feedback() }
-    var processedRelease by remember { mutableIntStateOf(0) }
-    LaunchedEffect(pressed, releaseCount, selected, enabled, ambient, state.visible) {
-        val released=releaseCount!=processedRelease
-        processedRelease=releaseCount
-        if (!enabled || !state.visible) { state.active = false; state.release = -1f; state.seconds = 0f; return@LaunchedEffect }
-        if (released) {
+    var interaction by remember { mutableStateOf<PressInteraction?>(null) }
+    LaunchedEffect(source, buttonFeedback, enabled, focused) {
+        interaction=null
+        if (!buttonFeedback || !enabled || !focused) return@LaunchedEffect
+        source.interactions.collect { event -> if (event is PressInteraction) interaction=event }
+    }
+    var processedInteraction by remember { mutableStateOf<PressInteraction?>(null) }
+    LaunchedEffect(interaction, selected, enabled, focused, ambient, state.visible) {
+        val changed=interaction!==processedInteraction
+        processedInteraction=interaction
+        if (!enabled || !focused || !state.visible) { state.active = false; state.release = -1f; state.seconds = 0f; return@LaunchedEffect }
+        if (changed && interaction is PressInteraction.Release) {
             val start = withFrameNanos { it }
             do { state.release = withFrameNanos { (it - start) / 1_000_000_000f } } while (state.release < .15f)
         }
         state.release = -1f
-        val active = pressed || selected
+        val active = interaction is PressInteraction.Press || selected
         if (active || ambient) {
-            if (!state.active) state.seconds = 0f
+            if (!state.active || (changed && interaction is PressInteraction.Press)) state.seconds = 0f
             state.active = active
             var last = withFrameNanos { it }
             while (true) { withFrameNanos { now -> state.seconds += (now - last) / 1_000_000_000f; last = now } }

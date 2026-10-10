@@ -103,6 +103,9 @@ class PressedInkTest {
             assertEquals(Color.Black,text.ink(),"$key text")
             assertEquals(Color.Black,caption.ink(),"$key caption")
             assertEquals(Color.Black,icon.centerPixel(),"$key caller icon")
+            button.performTouchInput { moveTo(Offset(-1000f,-1000f)) };mainClock.advanceTimeBy(160)
+            assertEquals(Color.Black,text.ink(),"$key stays held outside")
+            assertEquals(Color.Black,icon.centerPixel(),"$key caller icon stays held outside")
             button.save("held-$key")
             button.performTouchInput { up() };mainClock.advanceTimeBy(240)
             assertEquals(restingInk,text.ink(),"$key released text")
@@ -113,6 +116,8 @@ class PressedInkTest {
         assertEquals(Color.White,iconButton.centerPixel())
         iconButton.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
         assertEquals(Color.Black,iconButton.centerPixel())
+        iconButton.performTouchInput { moveTo(Offset(-1000f,-1000f)) };mainClock.advanceTimeBy(160)
+        assertEquals(Color.Black,iconButton.centerPixel(),"Standalone icon stays held outside")
         iconButton.save("held-icon-button")
         iconButton.performTouchInput { up() };mainClock.advanceTimeBy(240)
         assertEquals(Color.White,iconButton.centerPixel())
@@ -134,6 +139,7 @@ class PressedInkTest {
         assertEquals(plate[plate.width-12,plate.height/2],first,"Leading glyph matches the breathing plate")
         leading.save("held-leading-button")
         onRoot().save("held-leading-context")
+        leading.performTouchInput { moveTo(Offset(-1000f,-1000f)) }
         mainClock.advanceTimeBy(320)
         plate=leading.captureToImage().toPixelMap()
         assertTrue(first!=glyph.centerPixel(),"Leading glyph must keep breathing")
@@ -171,6 +177,10 @@ class PressedInkTest {
             button.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
             assertEquals(if(label=="Collapse")Color.Black else resting,button.ink(),"Only the collapse action uses button press feedback")
             button.save("held-${label.replace(' ','-')}")
+            if(label=="Collapse") {
+                button.performTouchInput { moveTo(Offset(-1000f,-1000f)) };mainClock.advanceTimeBy(160)
+                assertEquals(Color.Black,button.ink(),"Collapse stays held outside")
+            }
             button.performTouchInput { up() }
             repeat(12) {
                 mainClock.advanceTimeByFrame()
@@ -218,7 +228,9 @@ class PressedInkTest {
             val next=if(label=="Apply")later[24,32] else later[26,26]
             assertTrue(first!=next,"$label leading glyph keeps breathing")
             assertEquals(later[later.width-14,later.height/2],next,"$label glyph stays in phase")
-            button.performTouchInput { moveTo(Offset(-1000f,-1000f));up() };mainClock.advanceTimeBy(240)
+            button.performTouchInput { moveTo(Offset(-1000f,-1000f)) };mainClock.advanceTimeBy(160)
+            assertEquals(Color.Black,button.ink(),"$label stays held outside")
+            button.performTouchInput { up() };mainClock.advanceTimeBy(240)
             assertEquals(Color.White,button.ink(),"$label cancelled press")
         }
         assertEquals(0,clicks,"Dragging out of the actions must not activate them")
