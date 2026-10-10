@@ -54,6 +54,31 @@ class GalleryTest {
         capture("gallery-comfortable")
     }
 
+    @Test fun feedCardsSelectAndUpdateOptionalSlotsAndExample() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent { Box(Modifier.requiredSize(1024.dp, 768.dp)) { GalleryApp() } }
+        compose.onAllNodesWithText("信息流卡片")[0].performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithTag("feed-card-0").performClick()
+        compose.mainClock.advanceTimeBy(320)
+        compose.onNodeWithTag("feed-card-0").assertIsSelected()
+        compose.onNodeWithTag("feed-card-1").assertIsNotSelected()
+        capture("gallery-feed-cards")
+        compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("启用卡片")))
+            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 850f) }
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("状态胶囊").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("status = null", substring = true).assertExists()
+        compose.onNodeWithText("分类胶囊").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("label = null", substring = true).assertExists()
+        compose.onNodeWithText("启用卡片").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("enabled = false", substring = true).assertExists()
+        compose.onNodeWithTag("feed-card-0").assertIsNotEnabled()
+    }
+
     @Test fun galleryNavigatesAndCapturesBothLayouts() {
         compose.mainClock.autoAdvance = false
         var wide by mutableStateOf(true)

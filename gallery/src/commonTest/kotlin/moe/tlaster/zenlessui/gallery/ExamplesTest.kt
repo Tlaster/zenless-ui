@@ -19,4 +19,12 @@ class ExamplesTest {
             assertEquals("ZenlessTheme(size = ZenlessSize.${size.name}) {\n    ZenlessTextField(value, onChange)\n}",sizedExample("ZenlessTextField(value, onChange)",size))
         }
     }
+    @Test fun feedCardExampleKeepsSlotsAndCallerOwnedParameters() {
+        val code = feedCardExample(.75f, false, true, true, false, "Author", "A \"title\"", "Summary", "Featured", "Read")
+        listOf("coverAspectRatio = 0.75f", "enabled = false", "mutableStateOf(true)", "cover = {", "avatar = {", "author = {",
+            "title = { ZenlessText(\"A \\\"title\\\"\") }", "summary = {", "label = {", "status = null", "ContentScale.Crop").forEach { assertTrue(it in code, it) }
+        val noLabel = feedCardExample(1f, true, false, false, true, "A", "T", "S", "L", "R")
+        assertTrue("label = null" in noLabel)
+        assertTrue("status = { ZenlessText(\"R\", maxLines = 1) }" in noLabel)
+    }
 }
