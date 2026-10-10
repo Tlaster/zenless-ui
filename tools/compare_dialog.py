@@ -53,7 +53,7 @@ def compare():
     report["exceptions"] = [
         "No combined score: shell, close and every example button are reported independently.",
         "System-font glyphs are excluded. Caller background artwork is intentionally different and unscored.",
-        "Backdrop, translucent inner plate and curved shell edges have different backing; inspect their geometry visually.",
+        "Backdrop and translucent inner plate have different backing. Complete frame edges/corners are measured separately by compare_dialog_border.py.",
         "Motion, background tiling, clipping and lifecycle are checked separately in DialogTest, not by this still image.",
     ]
     actual.save(OUT / "actual.png")

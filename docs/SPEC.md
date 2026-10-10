@@ -165,16 +165,16 @@ There is no aggregate acceptance score. Current mean absolute RGB errors on fixe
 
 | Region | MAE | Local regression limit |
 | --- | ---: | ---: |
-| Header gradient and dots, excluding title/close | 0.6925 | 1.1 |
+| Header gradient and dots, excluding title/close | 0.6847 | 1.1 |
 | Opaque straight black frame segments | 0.0000 | 0.1 |
-| Close control, including cross and texture | 3.4320 | 4.2 |
+| Close control, including cross and texture | 3.4307 | 4.2 |
 | Example button 1 | 1.1899 | 1.6 |
 | Example button 2 | 1.2511 | 1.6 |
-| Example button 3 | 1.1898 | 1.6 |
+| Example button 3 | 1.1897 | 1.6 |
 | Example button 4 | 1.2511 | 1.6 |
 | Example button 5 | 1.1897 | 1.6 |
 
-The close control's red-mask intersection-over-union is 97.5019% (minimum 97% for regression). System-font glyph shapes, weight and slant are an agreed exception and are masked out. Custom animated artwork is a separate behavioral/visual check, not scored against the game's graphic. Exterior backing, antialiased frame edges and the translucent inner plate cover different images, so their pixels are not included in the fixed-color scores. Zero error on the opaque straight black segments does **not** mean the entire shell is pixel-identical. Remaining close-control differences concentrate on edge softness and checker phase. Raw full-crop differences, overlays and every regional mask are retained for inspection; no reference pixels are rendered in production.
+The close control's red-mask intersection-over-union is 97.5090% (minimum 97% for regression). System-font glyph shapes, weight and slant are an agreed exception and are masked out. Custom animated artwork is a separate behavioral/visual check, not scored against the game's graphic. Exterior backing and the translucent inner plate cover different images, so their pixels are not included in the fixed-color scores. Zero error on the opaque straight black segments does **not** validate the frame: that original mask omitted curved contours, antialiasing and the lower bevel. Those are now measured independently below. Remaining close-control differences concentrate on edge softness and checker phase. Raw full-crop differences, overlays and every regional mask are retained for inspection; no reference pixels are rendered in production.
 
 ```powershell
 python tools/compare_dialog.py --prepare "path/to/绝区零 2026_10_10 16_54_57.png"
@@ -183,3 +183,31 @@ python tools/compare_dialog.py
 ```
 
 Pillow and NumPy are required. Local reference/diagnostics remain under ignored `verification/dialog/`. The script checks each region independently after writing its diagnostics. `DialogTest` runs without the source capture: it covers delayed single dismissal, outside-input blocking, Escape, focus restoration/trapping, narrow large-text scrolling with a fixed header, reset on reopen, interrupted exit reversal, native fixture dimensions, one tile composition, changing tile dimensions, semantic/input exclusion, tiny-tile bounds and empty-tile stability. Gallery tests check custom background selection, live code, wide two-column and narrow one-column content. Desktop interaction/visual regressions and common Web compilation were also run. Android Back/IME, iOS safe areas, browser playback and real-device motion remain platform acceptance work; neither these static scores nor a successful compile substitutes for that review.
+
+### Complete Dialog frame recalibration
+
+The frame uses a 31.5 dp radius with a square top-end corner, subpixel silhouette placement, a softened black inner join, and a #353535 / 46% lower bevel displaced 5 dp down. All measurements scale with the control preset. The border and content are composited once inside the contour so overlapping draws do not repeatedly darken its antialiased pixels. Layout, content padding, header and close-button placement are unchanged.
+
+`tools/compare_dialog_border.py` uses a larger native crop, (1126, 566) through (2714, 1602). Fixed full-width bands cover every corner, all four straight edges, the soft inner join and the translucent bevel, including exterior AA pixels. Occluded backing and face colors are reconstructed from nearby pixels outside the frame bands; frame pixels are never copied into the test input. Reconstruction uncertainty remains in the measurements. The fixture invokes the same frame renderer as the Dialog. Its black interior is intentionally empty; only the narrow strip bordering the frame has reconstructed face colors.
+
+| Region | Previous MAE | Corrected MAE | Regression limit |
+| --- | ---: | ---: | ---: |
+| Top-left corner | 3.3200 | 2.1435 | 2.5 |
+| Top-right corner | 2.8388 | 0.6775 | 1.0 |
+| Bottom-left corner | 4.4344 | 2.2663 | 2.6 |
+| Bottom-right corner | 2.6421 | 2.5454 | 2.9 |
+| Complete top edge | 4.4949 | 0.8476 | 1.1 |
+| Complete left edge | 2.3812 | 0.6835 | 0.9 |
+| Complete right edge | 1.4668 | 0.4593 | 0.7 |
+| Complete bottom edge | 3.6956 | 1.0018 | 1.3 |
+| Translucent lower bevel | 7.4522 | 3.0946 | 3.5 |
+
+These are RGB channel errors on a 0–255 scale, not pixel identity. Residual error is largest at rounded edges and the reconstructed backing, especially the bottom-right corner. Source-independent tests check native top-left contour scanlines within one pixel, single AA coverage, content clipping, the softened inner join, and bevel transparency at densities 1 and 2, all presets and both layout directions. Other-platform rasterization remains unverified.
+
+```powershell
+python tools/compare_dialog_border.py --prepare "path/to/绝区零 2026_10_10 16_54_57.png"
+.\gradlew.bat :zenless-ui:desktopTest --tests '*DialogFrameTest'
+python tools/compare_dialog_border.py
+```
+
+Prepared inputs, native renders, raw/masked differences, masks and enlarged corner comparisons remain in ignored `verification/dialog-border/`. The optional `baseline.png` records the previous implementation on identical prepared inputs. All nine regional limits are checked separately after saving diagnostics; no aggregate score can hide a corner regression.

@@ -15,8 +15,6 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.*
@@ -106,18 +104,11 @@ public fun ZenlessDialog(
                 BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(16.dp), contentAlignment = Alignment.Center) {
                     val scale = size.scale
                     val viewportWidth = maxWidth
-                    val shape = RoundedCornerShape(topStart = (32 * scale).dp, topEnd = 0.dp, bottomEnd = (32 * scale).dp, bottomStart = (32 * scale).dp)
                     val scroll = rememberScrollState()
                     CompositionLocalProvider(LocalControlSize provides size, LocalTextStyle provides LocalTextStyle.current.copy(fontSize = size.fontSize.sp)) {
                         Column(modifier.width(762.dp).heightIn(max = maxHeight).graphicsLayer {
                             translationX = position.value.dp.toPx(); alpha = opacity.value
-                        }.drawBehind {
-                            val outline = shape.createOutline(this.size, layoutDirection, this)
-                            translate(0f, 4.5.dp.toPx()) { drawOutline(outline, Color(0xff202020)) }
-                        }.clip(shape).background(Color(0xff131313)).drawWithContent {
-                            drawContent()
-                            drawOutline(shape.createOutline(this.size, layoutDirection, this), Color.Black, style = Stroke(8.dp.toPx()))
-                        }.pointerInput(ready) {
+                        }.dialogFrame(scale).pointerInput(ready) {
                             if (!ready) awaitPointerEventScope { while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
                         }) {
                             Box(Modifier.fillMaxWidth().height((113 * scale).dp).drawWithCache {
