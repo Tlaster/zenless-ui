@@ -58,9 +58,15 @@ internal fun CacheDrawScope.buttonShell(fill:Color,edge:Color,round:Boolean,patt
     val outline=roundedPath(bounds,radius)
     val bevel=roundedPath(bounds.deflate(.8.dp.toPx()),radius-.8.dp.toPx())
     val circular=size.width<size.height*1.1f
-    val reflection=Brush.linearGradient(
-        0f to Color(0xff3d3d3d),(if(circular).6f else .67f) to Color(0xff3d3d3d),1f to edge,
-        end=Offset(size.width*(if(circular).22f else .0265f),size.height*.672f))
+    // Normalize the light direction so a longer label does not shorten the upper highlight.
+    val light=Offset(1.35f/size.width,1.52f/size.height)
+    val lightStart=Offset(0f,size.height*.21f)
+    val reflection=if(circular)Brush.linearGradient(
+        0f to Color(0xff3d3d3d),.6f to Color(0xff3d3d3d),1f to edge,
+        end=Offset(size.width*.22f,size.height*.672f)) else Brush.linearGradient(
+        0f to Color(0xff3d3d3d),.67f to Color(0xff3d3d3d),.8f to Color(0xff383838),
+        .9f to Color(0xff2e2e2e),1f to edge,
+        start=lightStart,end=lightStart+light/(light.x*light.x+light.y*light.y))
     if(!leading) {
         val checks=checkerPaint(mix(fill,Color.White,.06f))
         return {

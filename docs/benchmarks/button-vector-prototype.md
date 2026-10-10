@@ -2,6 +2,8 @@
 
 This records the initial **uncached** experiment. Those alternatives were not adopted at that stage: they reduced creation/resize work but changed calibrated pixels and increased forced redraw cost. After accepting the direct-vector appearance, the follow-up implementation added a native-resolution bitmap cache; see [the implementation results](button-select-optimization.md). The measurements below remain the original experiment.
 
+The direct-family test renderers now share the 2026-10-10 resource-management bevel calibration with production for cache-equivalence checks. The tables below retain the original measurements; rerunning the current harness does not reproduce the historical appearance. The supersampled baseline remains frozen.
+
 ## Implementations
 
 The baseline is the production renderer at `237e99f9d5681f0c28b15c236cbf71059febde98`, frozen in the test-only `SupersampledButtonReference.kt`. Alternatives live in `zenless-ui/src/desktopTest/kotlin/moe/tlaster/zenlessui/ButtonVectorPrototype.kt`:

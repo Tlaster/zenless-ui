@@ -40,7 +40,7 @@ internal fun Modifier.plate(
     val buttonDrawing=if(button)buttonShell(fill,edge,round,pattern,leading) else null
     onDrawBehind {
         if(button) {
-            drawPath(roundedPath(Rect(Offset.Zero,size),radius),Color.Black)
+            drawPath(roundedPath(Rect(Offset.Zero,size).inflate(2.dp.toPx()),radius+2.dp.toPx()),Color.Black)
             buttonDrawing!!()
         } else {
             layeredPlate(fill, edge, radius, faceInset, !input && enabled)

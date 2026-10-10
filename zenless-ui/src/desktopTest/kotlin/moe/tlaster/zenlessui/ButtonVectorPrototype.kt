@@ -22,9 +22,15 @@ internal fun CacheDrawScope.prototypeShell(
     val outline = roundedPath(bounds, radius)
     val bevel = roundedPath(bounds.deflate(.8.dp.toPx()), radius - .8.dp.toPx())
     val circular = size.width < size.height * 1.1f
-    val reflection = Brush.linearGradient(
-        0f to Color(0xff3d3d3d), (if (circular) .6f else .67f) to Color(0xff3d3d3d), 1f to edge,
-        end = Offset(size.width * (if (circular) .22f else .0265f), size.height * .672f),
+    val light = Offset(1.35f / size.width, 1.52f / size.height)
+    val lightStart = Offset(0f, size.height * .21f)
+    val reflection = if (circular) Brush.linearGradient(
+        0f to Color(0xff3d3d3d), .6f to Color(0xff3d3d3d), 1f to edge,
+        end = Offset(size.width * .22f, size.height * .672f),
+    ) else Brush.linearGradient(
+        0f to Color(0xff3d3d3d), .67f to Color(0xff3d3d3d), .8f to Color(0xff383838),
+        .9f to Color(0xff2e2e2e), 1f to edge,
+        start = lightStart, end = lightStart + light / (light.x * light.x + light.y * light.y),
     )
     val unit = size.height / 116f
     val innerBounds = Rect(11.51f * unit, 10.85f * unit, 106.39f * unit, 106.34f * unit)
