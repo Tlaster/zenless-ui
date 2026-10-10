@@ -5,17 +5,19 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.triStateToggleable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.*
@@ -63,19 +65,94 @@ public fun ZenlessTextField(
 
 internal fun nextCheckState(state: ToggleableState): ToggleableState = if (state == ToggleableState.On) ToggleableState.Off else ToggleableState.On
 
+/** Caller-owned tri-state selection; the capsule and label share one click target. */
 @Composable
 public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableState) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, label: String = "", size: ZenlessSize = LocalControlSize.current) {
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled)
-    val fill by animateFloatAsState(if (state == ToggleableState.Off) 0f else 1f, tween(160))
+    val pressed by source.collectIsPressedAsState()
+    val rim by animateFloatAsState(if (pressed && enabled) 1f else 0f, tween(100, easing = LinearEasing))
+    // shortcut: input timestamps are absent; retain the shared rim cycle until a timed hold capture is available.
+    val feedback = rememberFeedback(source, pressed || rim > 0f, enabled)
+    val progress by animateFloatAsState(if (state == ToggleableState.On) 1f else 0f,
+        if (enabled && state == ToggleableState.On) tween(400, easing = LinearEasing) else snap())
+    val scale = size.iconSize / 28f
+    val verticalInset = ((size.height - 38 * scale) / 2).dp
     Row(modifier.heightIn(min = size.height.dp).focusProperties { canFocus = false }
-        .triStateToggleable(state, interactionSource = source, indication = null, enabled = enabled, role = Role.Checkbox) { onStateChange(nextCheckState(state)) }.padding(6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(size.iconSize.dp).plate(feedback, if(enabled)mix(Color.Black, Palette.signal, fill) else Color(0xff2e2e2e), Color(0xff333333), round = false, pattern = false,enabled=enabled), contentAlignment = Alignment.Center) {
-            if (state != ToggleableState.Off) Mark(if (state == ToggleableState.Indeterminate) Mark.Minus else Mark.Check, Modifier.size((size.iconSize*5f/7f).dp), if (enabled) Color.Black else Palette.muted)
+        .triStateToggleable(state, source, null, enabled, Role.Checkbox) { onStateChange(nextCheckState(state)) }
+        .drawWithCache {
+            val inset = verticalInset.toPx().coerceAtMost(this.size.height / 2)
+            val bounds = Rect(0f, inset, this.size.width, this.size.height - inset)
+            val radius = minOf(19 * scale.dp.toPx(), bounds.minDimension / 2)
+            val shell = roundedPath(bounds, radius)
+            val border = 4.5f * scale.dp.toPx()
+            val outline = roundedPath(bounds.inflate(border), radius + border)
+            onDrawBehind {
+                if (enabled && rim > 0f) drawPath(outline,
+                    mix(Palette.signal, Color(0xff91bc00), Motion.signalColor(feedback.seconds)), rim)
+                drawPath(shell, Color.Black)
+            }
         }
-        if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color.White else Palette.muted, LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(label) }
+        .padding(start = (6 * scale).dp, end = ((if (label.isEmpty()) 6 else 18) * scale).dp, top = (8 * scale).dp, bottom = (8 * scale).dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((12 * scale).dp)) {
+        Canvas(Modifier.size(size.iconSize.dp)) {
+            scale(this.size.width / 56f, this.size.height / 56f, Offset.Zero) {
+                val pose = checkboxPose(if (state == ToggleableState.On && enabled) progress else 1f)
+                translate(28.4f + pose[3], 28f) {
+                    rotate(pose[2], Offset.Zero) {
+                        scale(pose[0], pose[1], Offset.Zero) {
+                            val ink = if (enabled) Color(0xff00cd00) else Palette.muted
+                            val ring = if (enabled) Brush.verticalGradient(
+                                0f to Color(0xff00ff00), .14f to Color(0xff00ff00), .5f to Color(0xff00ca00), .88f to Color(0xff009913), 1f to Color(0xff009913),
+                                startY = -25f, endY = 25f) else SolidColor(Palette.muted)
+                            drawCircle(ring, 21.75f, Offset.Zero, style = Stroke(6.17f))
+                            when {
+                                state == ToggleableState.Indeterminate -> drawLine(ink, Offset(-12f, 0f), Offset(12f, 0f), 5f, StrokeCap.Round)
+                                state == ToggleableState.On && progress >= .25f -> {
+                                    val reveal = ((progress - .25f) / .3f).coerceIn(0f, 1f)
+                                    clipRect(-30f, -30f, -25f + 55f * reveal, 30f) {
+                                        drawPath(checkboxCheck, Color.Black, style = Stroke(6.5f, join = StrokeJoin.Round))
+                                        drawPath(checkboxCheck, ink, style = Stroke(1.5f, join = StrokeJoin.Round))
+                                        drawPath(checkboxCheck, ink)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color(0xffc1c2c2) else Palette.muted,
+            LocalTextStyle provides LocalTextStyle.current.copy(fontSize = size.fontSize.sp)) { ZenlessText(label) }
     }
+}
+
+// Sampled projection keyframes: time, scale X/Y, roll, translation X in the 56px icon.
+private val checkboxFrames = arrayOf(
+    floatArrayOf(0f, 1f, 1f, 0f, 0f),
+    floatArrayOf(67f, 1.18f, .48f, 0f, 0f),
+    floatArrayOf(108f, .98f, .8f, -5f, -1f),
+    floatArrayOf(167f, .7f, 1.13f, -7f, -1.5f),
+    floatArrayOf(242f, 1.13f, .78f, 12f, 1f),
+    floatArrayOf(308f, .97f, 1.02f, 6f, 1f),
+    floatArrayOf(400f, 1f, 1f, 0f, 0f),
+)
+
+private fun checkboxPose(progress: Float): FloatArray {
+    val time = progress.coerceIn(0f, 1f) * 400
+    val index = checkboxFrames.indexOfFirst { it[0] >= time }.coerceAtLeast(1)
+    val from = checkboxFrames[index - 1]; val to = checkboxFrames[index]
+    val fraction = Motion.smoothEasing.transform((time - from[0]) / (to[0] - from[0]))
+    return FloatArray(4) { from[it + 1] + (to[it + 1] - from[it + 1]) * fraction }
+}
+
+private val checkboxCheck = Path().apply {
+    moveTo(-14.8f, -2.8f)
+    quadraticTo(-16f, -3.8f, -17f, -2.5f)
+    lineTo(-18.8f, -.1f); quadraticTo(-19.8f, 1.2f, -18.3f, 2.6f)
+    lineTo(-2.4f, 16.7f); quadraticTo(-.5f, 18.5f, 1.5f, 16.2f)
+    lineTo(22.7f, -9.3f); quadraticTo(24.1f, -11.1f, 22.2f, -12.5f)
+    lineTo(19.3f, -14.3f); quadraticTo(17.8f, -15.2f, 16.4f, -13.4f)
+    lineTo(-1f, 7.1f); close()
 }
 
 @Composable

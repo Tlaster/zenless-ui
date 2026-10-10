@@ -21,6 +21,30 @@ class GalleryTest {
     @Before fun locale() { Locale.setDefault(Locale.SIMPLIFIED_CHINESE) }
     @After fun restoreLocale() { Locale.setDefault(originalLocale) }
 
+    @Test fun checkboxKeepsThreeStatesAndRadioSelectionIndependent() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent { Box(Modifier.requiredSize(1024.dp,768.dp)) { GalleryApp() } }
+        compose.onAllNodesWithText("选择控件")[0].performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("标准").assertIsSelected()
+        compose.onNodeWithText("全选").performClick()
+        compose.mainClock.advanceTimeBy(440)
+        compose.onNodeWithText("全选").assertIsOn()
+        compose.onNodeWithText("ToggleableState.On", substring = true).assertExists()
+        capture("gallery-checkbox-on")
+        compose.onNodeWithText("全选").performClick()
+        compose.mainClock.advanceTimeBy(32)
+        compose.onNodeWithText("全选").assertIsOff()
+        compose.onNodeWithText("高级").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithText("高级").assertIsSelected()
+        compose.onNodeWithText("全选").assertIsOff()
+        compose.onNodeWithText("启用控件").performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onNodeWithText("全选").assertIsNotEnabled()
+        compose.onNodeWithText("enabled = false", substring = true).assertExists()
+    }
+
     @Test fun pillsSelectAndUpdateParametersAndCopyableCode() {
         compose.mainClock.autoAdvance = false
         compose.setContent { Box(Modifier.requiredSize(1024.dp,768.dp)) { GalleryApp() } }

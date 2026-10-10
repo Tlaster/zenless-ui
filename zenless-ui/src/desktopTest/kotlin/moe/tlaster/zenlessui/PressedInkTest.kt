@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import androidx.compose.ui.text.TextLayoutResult
@@ -33,7 +32,6 @@ class PressedInkTest {
         setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
             Row(Modifier.padding(16.dp),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
                 ZenlessCard(Modifier.size(90.dp,60.dp).testTag("card"),onClick={}) {}
-                ZenlessCheckbox(ToggleableState.Off,{},Modifier.testTag("checkbox"))
                 ZenlessRadioButton(false,{},Modifier.testTag("radio"))
                 ZenlessTextField("Text",{},Modifier.width(180.dp).testTag("field"),readOnly=true)
             }
@@ -43,7 +41,7 @@ class PressedInkTest {
             return listOf(1,minOf(20,pixels.width/2),pixels.width/2).map { pixels[it,pixels.height/2] }
         }
         mainClock.advanceTimeBy(200)
-        for(tag in listOf("card","checkbox","radio","field")) {
+        for(tag in listOf("card","radio","field")) {
             val control=onNodeWithTag(tag)
             if(tag=="field") { control.performTouchInput { click() };mainClock.advanceTimeBy(240) }
             val resting=surface(control)
