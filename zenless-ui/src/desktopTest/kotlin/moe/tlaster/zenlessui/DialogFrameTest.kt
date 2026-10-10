@@ -41,12 +41,12 @@ class DialogFrameTest {
             }
             // Partial coverage at the top edge must be applied once, even with opaque child content.
             val edge = pixels.getRGB(400, 32) and 255
-            assertTrue(edge in 180..200, "Top AA coverage on white: $edge")
+            assertTrue(edge in 110..135, "Single top AA coverage over the translucent rim: $edge")
             assertEquals(0, pixels.getRGB(400, 33) and 255)
         } } } finally { scene.close() }
     }
 
-    @Test fun frameClipsContentSoftensInnerJoinAndKeepsBevelTranslucentAcrossSizesAndDirections() {
+    @Test fun frameClipsContentAndHasATranslucentRimOnEverySideAcrossSizesAndDirections() {
         for (density in listOf(1f, 2f)) for (preset in ZenlessSize.entries) for (rtl in listOf(false, true)) {
             val scale = preset.scale
             val scene = ImageComposeScene((352 * density).toInt(), (252 * density).toInt(), Density(density)) {
@@ -64,17 +64,43 @@ class DialogFrameTest {
                 assertEquals(0, rgb(176f, 16 + 2 * scale), "Opaque black band")
                 assertTrue((rgb(176f, 16 + 5 * scale) and 255) in 50..250, "Inner edge has partial coverage")
                 assertEquals(0xffffff, rgb(176f, 16 + 8 * scale), "Content remains sharp inside the band")
-                val bevel = rgb(176f, 236 + 2 * scale)
-                for ((shift, expected) in listOf(16 to 59, 8 to 93, 0 to 128)) {
-                    assertTrue(abs(((bevel shr shift) and 255) - expected) <= 2, "Bevel transmits the colored backing")
+                val sides = listOf(176f to 16 - 2 * scale, 176f to 236 + 2 * scale,
+                    16 - 2 * scale to 126f, 336 + 2 * scale to 126f)
+                for ((x, y) in sides) {
+                    val rim = rgb(x, y)
+                    val expected = 0x3d648a
+                    for (shift in listOf(16, 8, 0)) {
+                        assertTrue(abs(((rim shr shift) and 255) - ((expected shr shift) and 255)) <= 2, "Rim at ($x,$y) transmits the colored backing")
+                    }
                 }
-                assertEquals(0x4080c0, rgb(176f, 236 + 7 * scale), "No hard shadow beyond the bevel")
+                assertEquals(0x4080c0, rgb(176f, 236 + 7 * scale), "No hard shadow beyond the rim")
             } } } finally { scene.close() }
         }
     }
 
+    @Test fun outerRimTransmitsBothLightAndDarkBacking() {
+        val scene = ImageComposeScene(472, 252, Density(1f)) {
+            Box(Modifier.fillMaxSize()) {
+                Canvas(Modifier.fillMaxSize()) {
+                    for (x in 0 until 472 step 20) drawRect(if (x % 40 == 0) Color.Black else Color.White,
+                        Offset(x.toFloat(), 0f), androidx.compose.ui.geometry.Size(20f, 252f))
+                }
+                Box(Modifier.offset(16.dp, 16.dp).size(440.dp, 220.dp).dialogFrame(1f))
+            }
+        }
+        try { scene.render(0).use { image -> image.encodeToData()!!.use {
+            val pixels = ImageIO.read(it.bytes.inputStream())
+            for (y in listOf(14, 238)) {
+                assertTrue((pixels.getRGB(90, y) and 255) in 21..25, "Rim over black")
+                assertTrue((pixels.getRGB(110, y) and 255) in 174..178, "Rim over white")
+            }
+            val file = File("../verification/dialog-rim/transparency.png")
+            file.parentFile.mkdirs(); file.writeBytes(it.bytes)
+        } } } finally { scene.close() }
+    }
+
     @Test fun capturesWholeFrameWithCleanedReferenceBacking() {
-        val folder = File("../verification/dialog-border")
+        val folder = File("../verification/dialog-rim")
         assumeTrue(File(folder,"backing.png").exists())
         runDesktopComposeUiTest(width = 1588, height = 1036) {
             mainClock.autoAdvance = false

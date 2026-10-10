@@ -24,6 +24,45 @@ import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
 class DialogTest {
+    @Test fun outerRimSurroundsWindowDuringBothFades() = runDesktopComposeUiTest(width = 1100, height = 800) {
+        mainClock.autoAdvance = false
+        var visible by mutableStateOf(true)
+        setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme { ZenlessOverlayHost {
+            Box(Modifier.fillMaxSize().background(Color.White))
+            ZenlessDialog(visible, "Rim", "Close", {}, Modifier.testTag("dialog")) { Spacer(Modifier.height(100.dp)) }
+        } } } }
+        fun checkRim(phase: String) {
+            val layout = onNodeWithTag("dialog").fetchSemanticsNode().boundsInRoot
+            // The outer tag precedes the animated layer; the close control includes its translation.
+            val right = onNodeWithContentDescription("Close").fetchSemanticsNode().boundsInRoot.right + 29
+            val window = layout.translate(Offset(right - layout.right, 0f))
+            val pixels = onRoot().captureToImage().toPixelMap()
+            save("dialog-rim-${phase.lowercase()}")
+            // Samples 14 px apart see the same phase of the 7 px backdrop stripes.
+            val pairs = listOf(
+                Offset(window.center.x, window.top - 2) to Offset(window.center.x, window.top - 16),
+                Offset(window.center.x, window.bottom + 2) to Offset(window.center.x, window.bottom + 16),
+                Offset(window.left - 2, window.center.y) to Offset(window.left - 16, window.center.y),
+                Offset(window.right + 2, window.center.y) to Offset(window.right + 16, window.center.y),
+            )
+            for ((rim, outside) in pairs) {
+                val difference = (0..6).maxOf { step ->
+                    val tangent = if (rim.x == outside.x) Offset(step.toFloat(), 0f) else Offset(0f, step.toFloat())
+                    val a = rim + tangent; val b = outside + tangent
+                    kotlin.math.abs(pixels[a.x.toInt(), a.y.toInt()].red - pixels[b.x.toInt(), b.y.toInt()].red)
+                }
+                assertTrue(difference > .008f, "$phase rim at $rim must extend outside the black frame; difference=$difference")
+            }
+        }
+        mainClock.advanceTimeBy(80)
+        checkRim("Entering")
+        mainClock.advanceTimeBy(320)
+        checkRim("Settled")
+        runOnIdle { visible = false }
+        mainClock.advanceTimeBy(128)
+        checkRim("Exiting")
+    }
+
     @Test fun dismissesOnceAfterExitBlocksOutsideAndRestoresFocus() = runDesktopComposeUiTest(width = 1100, height = 800) {
         mainClock.autoAdvance = false
         var visible by mutableStateOf(false)

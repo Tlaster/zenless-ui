@@ -159,13 +159,13 @@ Pillow and NumPy are required. Captures, comparison sheets, raw/masked differenc
 
 ## Dialog calibration
 
-The baseline is the original 3840 by 2160 `绝区零 2026_10_10 16_54_57.png`, compared with a Windows Desktop fixture at density 2, font scale 1 and Default size. The centered five-button example measures 762 by 482 dp. The fixed context crop is (1150, 590) through (2690, 1580), without resizing. The two supplied videos inform entry/exit order and continuous background movement; their artwork and exact loop period are deliberately not reproduced.
+The baseline is the original 3840 by 2160 `绝区零 2026_10_10 16_54_57.png`, compared with a Windows Desktop fixture at density 2, font scale 1 and Default size. The centered five-button example measures 762 by 482 dp. The fixed context crop is (1136, 576) through (2704, 1594), without resizing, so it includes the complete external rim. The two supplied videos inform entry/exit order and continuous background movement; their artwork and exact loop period are deliberately not reproduced.
 
 There is no aggregate acceptance score. Current mean absolute RGB errors on fixed masks (0–255 per channel) are:
 
 | Region | MAE | Local regression limit |
 | --- | ---: | ---: |
-| Header gradient and dots, excluding title/close | 0.6847 | 1.1 |
+| Header gradient and dots, excluding title/close | 0.6806 | 1.1 |
 | Opaque straight black frame segments | 0.0000 | 0.1 |
 | Close control, including cross and texture | 3.4307 | 4.2 |
 | Example button 1 | 1.1899 | 1.6 |
@@ -186,23 +186,28 @@ Pillow and NumPy are required. Local reference/diagnostics remain under ignored 
 
 ### Complete Dialog frame recalibration
 
-The frame uses a 31.5 dp radius with a square top-end corner, subpixel silhouette placement, a softened black inner join, and a #353535 / 46% lower bevel displaced 5 dp down. All measurements scale with the control preset. The border and content are composited once inside the contour so overlapping draws do not repeatedly darken its antialiased pixels. Layout, content padding, header and close-button placement are unchanged.
+The outermost frame is a **closed translucent rim around all four sides**, extending 5 dp outward from the black silhouette. It uses #393939 at 40% opacity, calibrated across the four edges. Inside it, the black frame retains a 31.5 dp radius, a square top-end corner, subpixel placement and a softened inner join. Dimensions scale with the control preset. Border and content are composited once inside the black contour to avoid repeated antialias coverage. During fades, a separate canvas layer explicitly includes the external rim; it translates with the window without cropping to the layout bounds. Layout, content padding, header and close-button placement are unchanged.
 
-`tools/compare_dialog_border.py` uses a larger native crop, (1126, 566) through (2714, 1602). Fixed full-width bands cover every corner, all four straight edges, the soft inner join and the translucent bevel, including exterior AA pixels. Occluded backing and face colors are reconstructed from nearby pixels outside the frame bands; frame pixels are never copied into the test input. Reconstruction uncertainty remains in the measurements. The fixture invokes the same frame renderer as the Dialog. Its black interior is intentionally empty; only the narrow strip bordering the frame has reconstructed face colors.
+The previous implementation incorrectly represented the translucent rim as a downward-displaced lower bevel. Its calibration also treated the top/side rim as backing, so those scores did not validate the full border and are superseded here. `tools/compare_dialog_border.py` keeps the native crop (1126, 566) through (2714, 1602), but now scores fixed bands extending 13 px outside and 13 px inside the black contour. The top, left, right and bottom translucent strips are reported separately, alongside four complete edges and four corners.
+
+Backing samples come from at least 13 px outside the black contour, beyond the entire 10 px source rim. Face samples come from 16 px inside. Assertions enforce both distances, including the square corner, so neither input can contain the source frame. Occluded backing remains an extrapolation: its uncertainty is included in the reported errors. The fixture invokes the production frame renderer with an empty black interior and only a narrow reconstructed face strip. The previous implementation was recaptured on these same corrected inputs for the comparison below; old scores from the narrower masks are not comparable.
 
 | Region | Previous MAE | Corrected MAE | Regression limit |
 | --- | ---: | ---: | ---: |
-| Top-left corner | 3.3200 | 2.1435 | 2.5 |
-| Top-right corner | 2.8388 | 0.6775 | 1.0 |
-| Bottom-left corner | 4.4344 | 2.2663 | 2.6 |
-| Bottom-right corner | 2.6421 | 2.5454 | 2.9 |
-| Complete top edge | 4.4949 | 0.8476 | 1.1 |
-| Complete left edge | 2.3812 | 0.6835 | 0.9 |
-| Complete right edge | 1.4668 | 0.4593 | 0.7 |
-| Complete bottom edge | 3.6956 | 1.0018 | 1.3 |
-| Translucent lower bevel | 7.4522 | 3.0946 | 3.5 |
+| Top-left corner | 2.7066 | 1.9045 | 2.2 |
+| Top-right corner | 2.7464 | 1.8829 | 2.2 |
+| Bottom-left corner | 3.3267 | 2.6107 | 2.9 |
+| Bottom-right corner | 3.2497 | 2.9156 | 3.2 |
+| Complete top edge | 2.2502 | 1.5392 | 1.8 |
+| Complete left edge | 3.0246 | 1.6185 | 1.9 |
+| Complete right edge | 3.5504 | 1.8121 | 2.1 |
+| Complete bottom edge | 2.0120 | 2.0596 | 2.3 |
+| Translucent top rim | 3.9509 | 2.5288 | 3.0 |
+| Translucent left rim | 5.4370 | 2.6248 | 3.0 |
+| Translucent right rim | 6.7950 | 3.3184 | 3.7 |
+| Translucent bottom rim | 3.7337 | 3.8289 | 4.2 |
 
-These are RGB channel errors on a 0–255 scale, not pixel identity. Residual error is largest at rounded edges and the reconstructed backing, especially the bottom-right corner. Source-independent tests check native top-left contour scanlines within one pixel, single AA coverage, content clipping, the softened inner join, and bevel transparency at densities 1 and 2, all presets and both layout directions. Other-platform rasterization remains unverified.
+These are RGB channel errors on a 0–255 scale, not pixel identity. Bottom-edge error increases slightly with the color/opacity fit across all four sides; the reconstructed backing and corner antialiasing remain limitations. Source-independent tests check native top-left contour scanlines within one pixel, single AA coverage, content clipping, the softened inner join, and all four translucent sides at densities 1 and 2, all presets and both layout directions. A black/white striped fixture verifies that background contrast remains visible through the rim, and actual Dialog entry/settled/exit captures check that it is never cropped during movement and fading. Other-platform rasterization remains unverified.
 
 ```powershell
 python tools/compare_dialog_border.py --prepare "path/to/绝区零 2026_10_10 16_54_57.png"
@@ -210,4 +215,4 @@ python tools/compare_dialog_border.py --prepare "path/to/绝区零 2026_10_10 16
 python tools/compare_dialog_border.py
 ```
 
-Prepared inputs, native renders, raw/masked differences, masks and enlarged corner comparisons remain in ignored `verification/dialog-border/`. The optional `baseline.png` records the previous implementation on identical prepared inputs. All nine regional limits are checked separately after saving diagnostics; no aggregate score can hide a corner regression.
+Prepared inputs, native renders, raw/masked differences, masks and enlarged corner comparisons remain in ignored `verification/dialog-rim/`. The optional `baseline.png` records the previous implementation on identical prepared inputs. All twelve regional limits are checked separately after saving diagnostics; no aggregate score can hide a missing side or a corner regression. `verification/dialog-border/` contains superseded diagnostics from the incomplete model and must not be used for acceptance.

@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
-OUT = Path(__file__).resolve().parents[1] / 'verification' / 'dialog-border'
+OUT = Path(__file__).resolve().parents[1] / 'verification' / 'dialog-rim'
 CROP = (1126, 566, 2714, 1602)
 Y, X = np.mgrid[566:1602, 1126:2714].astype(float)
 X += .5; Y += .5
@@ -28,26 +28,28 @@ def distance(x, y, shift=0):
 
 
 D = distance(X, Y)
-G = distance(X, Y, 9)
 # Fixed full-width bands retain AA pixels; no masking based on actual errors.
-FRAME = (D >= -3) & (D <= 13)
-BEVEL = (D < 0) & (G >= -3)
+FRAME = (D >= -13) & (D <= 13)
+RIM = (D >= -13) & (D < 0)
 REGIONS = {
     'top_left': FRAME & (X < 1230) & (Y < 670),
     'top_right': FRAME & (X > 2610) & (Y < 670),
-    'bottom_left': (FRAME | BEVEL) & (X < 1230) & (Y > 1490),
-    'bottom_right': (FRAME | BEVEL) & (X > 2610) & (Y > 1490),
+    'bottom_left': FRAME & (X < 1230) & (Y > 1490),
+    'bottom_right': FRAME & (X > 2610) & (Y > 1490),
     'top_edge': FRAME & (X >= 1230) & (X <= 2610) & (Y < 630),
     'left_edge': FRAME & (Y >= 670) & (Y <= 1490) & (X < 1200),
     'right_edge': FRAME & (Y >= 670) & (Y <= 1490) & (X > 2640),
     'bottom_edge': FRAME & (X >= 1230) & (X <= 2610) & (Y > 1540),
-    'translucent_bevel': BEVEL,
+    'rim_top': RIM & (X >= 1230) & (X <= 2610) & (Y < 630),
+    'rim_left': RIM & (Y >= 670) & (Y <= 1490) & (X < 1200),
+    'rim_right': RIM & (Y >= 670) & (Y <= 1490) & (X > 2640),
+    'rim_bottom': RIM & (X >= 1230) & (X <= 2610) & (Y > 1540),
 }
 # Per-region regression limits, not a combined acceptance score.
 BUDGETS = {
-    'top_left': 2.5, 'top_right': 1.0, 'bottom_left': 2.6, 'bottom_right': 2.9,
-    'top_edge': 1.1, 'left_edge': .9, 'right_edge': .7, 'bottom_edge': 1.3,
-    'translucent_bevel': 3.5,
+    'top_left': 2.2, 'top_right': 2.2, 'bottom_left': 2.9, 'bottom_right': 3.2,
+    'top_edge': 1.8, 'left_edge': 1.9, 'right_edge': 2.1, 'bottom_edge': 2.3,
+    'rim_top': 3.0, 'rim_left': 3.0, 'rim_right': 3.7, 'rim_bottom': 4.2,
 }
 
 
@@ -69,15 +71,22 @@ def prepare(path):
     p = np.array(ref).astype(float)
     gy, gx = np.gradient(D)
     norm = np.maximum(np.hypot(gx,gy), .001); gx /= norm; gy /= norm
+    square = (X > 2619.25) & (Y < 661.67)
+    right = (2682.25-X) <= (Y-598.67)
+    gx[square] = np.where(right[square], -1, 0)
+    gy[square] = np.where(right[square], 0, 1)
     # Extrapolate face from 16 px inside the border, where no frame pixels remain.
-    face = sample(p, X+gx*(16-D), Y+gy*(16-D))
+    fx = X+gx*(16-D); fy = Y+gy*(16-D)
+    fx[square] = np.minimum(fx[square], 2682.25-16)
+    fy[square] = np.maximum(fy[square], 598.67+16)
+    assert np.all(distance(fx,fy)[FRAME] > 15), 'Face samples must be inside the black band'
+    face = sample(p, fx, fy)
     face[D > 18] = 0
-    # The backing is sampled beyond BOTH the frame and its displaced bevel.
-    outside = np.maximum(D,G)
-    oy, ox = np.gradient(outside)
-    norm = np.maximum(np.hypot(ox,oy), .001); ox /= norm; oy /= norm
-    backing = sample(p, X-ox*(outside+4), Y-oy*(outside+4))
-    backing[outside < -3] = p[outside < -3]
+    # All four sides have a 10 px outer rim; sample beyond it, not beside the black band.
+    bx = X-gx*(D+14); by = Y-gy*(D+14)
+    assert np.all(distance(bx,by)[FRAME] < -13), 'Backing samples must not contain the source rim'
+    backing = sample(p, bx, by)
+    backing[D < -13] = p[D < -13]
     Image.fromarray(np.uint8(np.clip(face,0,255))).save(OUT/'face.png')
     Image.fromarray(np.uint8(np.clip(backing,0,255))).save(OUT/'backing.png')
     print('Prepared cleaned face and backing; border pixels were not copied into either input.')
@@ -113,7 +122,7 @@ def compare():
             sheet.paste(im.crop(bounds).resize((336,336),Image.Resampling.NEAREST), (column*344+4,row*370+24))
     sheet.save(OUT/'corners-comparison.png')
     report = {'cases':cases,'limitations':[
-        'All four corners, complete black bands, their soft inner edges and the lower bevel are included.',
+        'All four corners, complete black bands, their soft inner edges and the full surrounding rim are included.',
         'Occluded face/backing are reconstructed from nearby uncontaminated pixels; their uncertainty remains in the errors.',
         'No source frame pixels enter rendered inputs. Raw differences and fixed masks remain available.',
         'These measurements are not a claim of pixel identity or cross-platform acceptance.']}

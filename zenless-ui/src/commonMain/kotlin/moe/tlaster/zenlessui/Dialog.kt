@@ -107,8 +107,8 @@ public fun ZenlessDialog(
                     val scroll = rememberScrollState()
                     CompositionLocalProvider(LocalControlSize provides size, LocalTextStyle provides LocalTextStyle.current.copy(fontSize = size.fontSize.sp)) {
                         Column(modifier.width(762.dp).heightIn(max = maxHeight).graphicsLayer {
-                            translationX = position.value.dp.toPx(); alpha = opacity.value
-                        }.dialogFrame(scale).pointerInput(ready) {
+                            translationX = position.value.dp.toPx()
+                        }.dialogFrame(scale) { opacity.value }.pointerInput(ready) {
                             if (!ready) awaitPointerEventScope { while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
                         }) {
                             Box(Modifier.fillMaxWidth().height((113 * scale).dp).drawWithCache {

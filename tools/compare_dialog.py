@@ -13,8 +13,8 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "verification" / "dialog"
-CROP = (1150, 590, 2690, 1580)
-Y, X = np.mgrid[590:1580, 1150:2690]
+CROP = (1136, 576, 2704, 1594)
+Y, X = np.mgrid[CROP[1]:CROP[3], CROP[0]:CROP[2]]
 
 
 def box(x0, y0, x1, y1):
@@ -26,7 +26,7 @@ def compare():
     actual = Image.open(ROOT / "verification" / "dialog-reference.png").convert("RGB")
     assert actual.size == (3840, 2160), "Never resize the native fixture"
     actual = actual.crop(CROP)
-    assert ref.size == actual.size == (1540, 990)
+    assert ref.size == actual.size == (CROP[2]-CROP[0], CROP[3]-CROP[1])
     a, b = np.array(ref), np.array(actual)
     diff = np.abs(a.astype(np.int16) - b.astype(np.int16))
     regions = {
@@ -62,11 +62,12 @@ def compare():
     Image.fromarray(heat).save(OUT / "raw-difference-x4.png")
     heat[~combined] = 0
     Image.fromarray(heat).save(OUT / "masked-difference-x4.png")
-    sheet = Image.new("RGB", (3080, 1020), "#181818")
-    sheet.paste(ref, (0, 30)); sheet.paste(actual, (1540, 30))
+    width, height = ref.size
+    sheet = Image.new("RGB", (width*2+16, height+30), "#181818")
+    sheet.paste(ref, (0, 30)); sheet.paste(actual, (width+16, 30))
     draw = ImageDraw.Draw(sheet)
     draw.text((12, 8), "REFERENCE / original resolution", fill="white")
-    draw.text((1552, 8), "ACTUAL / font and background artwork intentionally differ", fill="white")
+    draw.text((width+28, 8), "ACTUAL / font and background artwork intentionally differ", fill="white")
     sheet.save(OUT / "comparison.png")
     (OUT / "metrics.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
