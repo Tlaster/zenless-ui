@@ -39,7 +39,7 @@ mavenPublishing {
     configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = true))
     publishToMavenCentral()
     signAllPublications()
-    coordinates("moe.tlaster.zenlessui", "zenless-ui", "0.1.0")
+    coordinates("moe.tlaster.zenlessui", "zenless-ui")
     pom {
         name.set("zenless-ui")
         description.set("Fixed dark-theme Compose Multiplatform components with expressive motion")

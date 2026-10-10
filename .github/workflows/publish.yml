@@ -1,28 +1,72 @@
-name: Publish Maven Central
+name: Publish Maven Central and snapshots
 on:
+  push:
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish; blank uses VERSION_NAME from gradle.properties (tags use their version)'
+        required: false
+        type: string
 permissions:
   contents: read
+concurrency:
+  group: maven-publish
+  cancel-in-progress: false
 jobs:
   publish:
+    if: github.repository == 'Tlaster/zenless-ui'
     runs-on: macos-15
-    environment: maven-central
     steps:
       - uses: actions/checkout@v4
+      - name: Check publication routing
+        run: python3 tools/check_publish_workflow.py
+      - name: Resolve publication version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          version="$REQUESTED_VERSION"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            if [[ "$version" == *-SNAPSHOT ]]; then
+              echo '::error::Release tags must not end in -SNAPSHOT'
+              exit 1
+            fi
+          elif [[ -z "$version" ]]; then
+            version=$(sed -n 's/^VERSION_NAME=//p' gradle.properties)
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+([.-][A-Za-z0-9]+)*)?$ ]]; then
+            echo '::error::Expected a version such as 0.1.0, 0.1.0-rc.1 or 0.1.0-SNAPSHOT'
+            exit 1
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF_TYPE" == branch && "$version" != *-SNAPSHOT ]]; then
+            echo '::error::Main branch builds require a -SNAPSHOT version in gradle.properties'
+            exit 1
+          fi
+          echo "PUBLICATION_VERSION=$version" >> "$GITHUB_ENV"
+          echo "Publishing version: $version"
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '25'}
       - uses: android-actions/setup-android@v3
         with: {packages: platform-tools, log-accepted-android-sdk-licenses: false}
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
-      - name: Verify and publish all targets
+      - name: Verify library
+        run: ./gradlew :zenless-ui:desktopTest :zenless-ui:iosSimulatorArm64Test "-PVERSION_NAME=$PUBLICATION_VERSION" --stacktrace
+      - name: Publish all targets
         env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
         run: |
           test -n "$ORG_GRADLE_PROJECT_mavenCentralUsername"
           test -n "$ORG_GRADLE_PROJECT_mavenCentralPassword"
           test -n "$ORG_GRADLE_PROJECT_signingInMemoryKey"
-          ./gradlew :zenless-ui:desktopTest :zenless-ui:iosSimulatorArm64Test :zenless-ui:publishAndReleaseToMavenCentral --stacktrace
+          if [[ "$PUBLICATION_VERSION" == *-SNAPSHOT ]]; then
+            ./gradlew :zenless-ui:publishToMavenCentral "-PVERSION_NAME=$PUBLICATION_VERSION" --stacktrace
+          else
+            ./gradlew :zenless-ui:publishAndReleaseToMavenCentral "-PVERSION_NAME=$PUBLICATION_VERSION" --stacktrace
+          fi
