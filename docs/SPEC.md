@@ -38,6 +38,12 @@ Non-folder selection uses one shared indicator, moving over 280 ms with `cubic-b
 
 The external selected state, native press and input focus are combined into one continuous two-second rim color cycle using the existing signal palette. State handoffs do not restart it. There is no scale pulse, hover highlight or release flash. Native focus and keyboard activation are supported for this component; no custom focus-navigation or gamepad mapping is added. Disabling suppresses activation and breathing and applies 50% opacity. Inner geometry and default typography scale by the existing size preset; parent width and the cover ratio do not.
 
+## Pill containers
+
+`ZenlessPillContainer` owns only the opaque shaded shell, its external highlight and a clipped `RowScope` content slot. Content contains no independent controls. Width follows content or caller constraints; 40 / 52 / 62 dp presets are minimum shell heights. At Default, padding is 18 dp horizontally and 6 dp vertically; padding, edge widths and inherited text size follow the preset. Taller content grows the capsule; explicit fixed constraints clip the contents. No avatar, text layout, progress bar, business assets or palette overrides are part of the component.
+
+Optional `onClick` supplies one whole-container action; null leaves display-only content. External selection, native press and keyboard focus share `Motion.signalColor`'s two-second cycle. Handoffs preserve the running phase. Release/cancellation returns to selected/focused state, never toggles selection automatically, and has no flash. Hover does not highlight. Disabling suppresses activation and breathing without fading the shell or caller content. The highlight extends 3 dp outside the Default shell (proportional to preset); it does not affect measurement. A clipping parent must reserve this space. Content clipping is inside the highlight drawing layer.
+
 ## Gallery
 
 Chinese and English follow the system language initially and can be toggled. Wide windows use a category sidebar; narrow windows show categories and detail separately. Examples use public library APIs. Parameter changes update the matching code snippets. Example state is ephemeral and resets when leaving a category. Code copying operates on the visible example.
@@ -79,3 +85,21 @@ python tools/compare_feed_card.py
 ```
 
 Outputs include `comparison.png`, per-case `*-overlay.png`, masked `*-difference-x4.png`, unmasked `*-raw-difference-x4.png`, `*-mask.png` and `metrics.json`. The local reference-capture test skips when reference artwork is absent; geometry, state, focus/keyboard, scroll cancellation, cover reservation, all-size/density, unrestricted text and invalid-ratio tests always run. Gallery regression covers selection, capsule toggles, disabled state and copyable parameters. The library tests lock measured reference contour scanlines within one pixel and verify color-only motion. Other platform builds and real-device visuals are separate acceptance work.
+
+## Pill container calibration
+
+References are the user-supplied 3840 by 2160 captures `绝区零 2026_10_10 8_27_23.png` (normal), `绝区零 2026_10_10 15_52_57.png` (highlighted) and `绝区零 2026_10_10 15_54_03.png` (colored background). All cases use the unscaled 660 by 156 crop at (340, 24). The Windows Desktop fixture uses density 2, font scale 1, Default styling and an explicit 314.5 by 62.5 dp shell at (7.5, 8) dp. This reference size is independent of the three preset minimum heights. Sampled face pixels are identical across backgrounds and selection, supporting an opaque shell with an independent outer highlight.
+
+The shell uses fitted curved caps, a black surround, a soft gray upper bevel and a dark vertical gradient. Highlight geometry is separately calibrated, keeping its position and width fixed through the existing color cycle. The selected fixture advances the test clock by 736 ms from composition, giving solid rim `#A3C300` versus reference `#A4C400`; no sampled replacement palette is added.
+
+RGB mean absolute error on fixed shell masks is **0.774 normal / 1.716 selected / 1.433 colored background** (0–255 per channel). Face error is 0.663 in all cases. The highlighted contour intersection-over-union is **97.9771%**. Reference scanlines are checked within one pixel, with separate shading assertions. Residual differences concentrate on curved highlight edges (region MAE 3.177) and the reconstructed backing around the outer edge. These measurements establish calibrated geometry and colors, **not bit-identical pixels** or cross-platform acceptance. After saving diagnostics, the comparison script fails if shell error exceeds 1.0 / 2.0 / 1.7 respectively, face error exceeds 1.0, or contour IoU drops below 97.5%; these are regression budgets for the measured result.
+
+Caller avatar, nickname, progress track/text and level are excluded using fixed reference-coordinate masks. Reference UI is never pasted into the rendered output; the fixture has an empty content slot. For the colored case, the occluded backing and a 2 px exterior safety band are reconstructed by horizontal interpolation, so soft-edge comparisons include that uncertainty. The script preserves raw differences, region masks, 50% overlays and separately reported face/bevel/black-surround/highlight errors. Source artwork and generated captures stay in ignored `verification/pill/`, outside the library and Gallery distribution.
+
+```powershell
+python tools/compare_pill.py --prepare "path/to/normal.png" "path/to/selected.png" "path/to/background.png"
+.\gradlew.bat :zenless-ui:desktopTest --tests '*PillTest*'
+python tools/compare_pill.py
+```
+
+Pillow and NumPy are required for preparation/comparison. Black-background fixtures, reference scanlines/shading, press/cancel/selection/focus/keyboard/disabled behavior, color-only layout stability, both densities, all presets, runtime size overrides, text growth, RTL, content clipping and scroll cancellation run without local source images. The colored-background capture runs when `backing.png` has been prepared. Gallery checks selection, enabled/width/long-content parameters, copyable code and category navigation; `verification/gallery-pill-selected.png` shows the live example.

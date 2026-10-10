@@ -21,6 +21,31 @@ class GalleryTest {
     @Before fun locale() { Locale.setDefault(Locale.SIMPLIFIED_CHINESE) }
     @After fun restoreLocale() { Locale.setDefault(originalLocale) }
 
+    @Test fun pillsSelectAndUpdateParametersAndCopyableCode() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent { Box(Modifier.requiredSize(1024.dp,768.dp)) { GalleryApp() } }
+        compose.onAllNodesWithText("胶囊容器")[0].performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithTag("pill-preview").performClick()
+        compose.mainClock.advanceTimeBy(32)
+        compose.onNodeWithTag("pill-preview").assertIsSelected()
+        compose.mainClock.advanceTimeBy(720)
+        capture("gallery-pill-selected")
+        compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("启用胶囊")))
+            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 450f) }
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("启用胶囊").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithTag("pill-preview").assertIsNotEnabled()
+        compose.onNodeWithText("enabled = false", substring = true).assertExists()
+        compose.onNodeWithText("填满可用宽度").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("modifier = Modifier.fillMaxWidth()", substring = true).assertExists()
+        compose.onNodeWithText("长内容").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("ZenlessText(\"内容插槽可以容纳更长的说明", substring = true).assertExists()
+    }
+
     @Test fun tabsExposeColorOnlyStyleAndMatchingExample() {
         compose.mainClock.autoAdvance=false
         compose.setContent { Box(Modifier.requiredSize(1024.dp,768.dp)) { GalleryApp() } }

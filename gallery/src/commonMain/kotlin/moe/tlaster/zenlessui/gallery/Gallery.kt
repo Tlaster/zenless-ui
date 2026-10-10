@@ -31,7 +31,7 @@ internal fun sizedExample(code: String, size: ZenlessSize): String =
 internal enum class Demo(val en: String, val zh: String) {
     Foundations("Foundations", "视觉基础"), Buttons("Buttons", "按钮"), Navigation("Navigation", "导航与页签"),
     Fields("Text fields", "文本输入"), Select("Select & slider", "选择器与滑条"), Selection("Selection controls", "选择控件"),
-    Display("Cards & feedback", "卡片与反馈"), FeedCards("Feed cards", "信息流卡片"), Overlays("Overlays", "弹层"), Tooltip("Tooltip", "工具提示"), Examples("Settings example", "设置页示例")
+    Display("Cards & feedback", "卡片与反馈"), FeedCards("Feed cards", "信息流卡片"), Pills("Pill containers", "胶囊容器"), Overlays("Overlays", "弹层"), Tooltip("Tooltip", "工具提示"), Examples("Settings example", "设置页示例")
 }
 
 /** The gallery uses only public library APIs, including every interactive preview. */
@@ -91,6 +91,7 @@ public fun GalleryApp() {
                                         Demo.Selection -> SelectionDemo(tr, record)
                                         Demo.Display -> DisplayDemo(tr)
                                         Demo.FeedCards -> FeedCardsDemo(tr, record)
+                                        Demo.Pills -> PillsDemo(tr, record)
                                         Demo.Overlays -> {
                                             Preview(tr("Full-width alert", "通栏 Alert")) {
                                                 ZenlessButton({ alert = true }) { ZenlessText(tr("Open alert", "打开 Alert")) }

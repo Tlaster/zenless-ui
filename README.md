@@ -11,7 +11,7 @@ Version **0.1.0**. Maven Central publication is configured; the first upload req
 - Theme, text, surface, button, icon content slot, back and close buttons, spinner
 - Horizontal tabs, redrawn folder tabs, vertical navigation
 - Text field, select, slider, tri-state checkbox, radio button, switch
-- Card, feed card, badge, progress, metric, information row, notice, collapse
+- Card, feed card, pill container, badge, progress, metric, information row, notice, collapse
 - Alert, drawer, tooltip, overlay host with live background blur
 
 The gallery provides categories, live examples, editable parameters and copyable Kotlin. State is owned by callers. There is one fixed palette, no color override API, no light theme, no bundled icon set, fonts or audio. Intrinsic marks are drawn by the components. Business icons are composable content. Custom keyboard navigation, shortcuts and gamepads are outside this version's scope; feed cards support native input focus/activation, and normal text editing and IME remain available.
@@ -88,6 +88,8 @@ ZenlessButton(onClick = { /* navigate */ }, leadingIcon = {
 ```
 
 All general button variants and standalone icon buttons share the gray shell and state text colors: white when enabled, `#565657` when disabled, and black while held. Filled buttons with a leading icon keep a dark plate; `tone` selects the fixed color of the leading badge. The disabled badge retains a dim version of its color while the shell and checker texture remain unchanged. Buttons use normal-weight platform-default text without forced italics. Labels with an icon are centered between the leading circle's far edge and the trailing semicircle's center, mirrored in RTL; labels without an icon are centered in the whole button. Alert actions reuse this same `ZenlessButton` with `leadingIcon`.
+
+`ZenlessPillContainer` draws an opaque, shaded capsule around one display-only `RowScope` content slot. Width follows the content or `Modifier`; the three presets supply minimum heights, inherited typography and proportional padding (18 dp horizontal / 6 dp vertical at Default). Taller content grows the shell, while explicit size constraints clip it. Omit `onClick` for a display-only container. Otherwise it has one whole-container action and native keyboard focus/activation; the caller owns `selected`. Press, focus and selection share the existing two-second yellow/green rim cycle without scaling, hover feedback or release flashes. Disabling retains the shell and suppresses input/breathing. Leave 3 dp at Default (proportional to the preset) around the shell for its external rim; it does not change measured size and a clipping parent can hide it. The **Pill containers** Gallery page includes live state/width/content controls, a display-only composition and matching Kotlin. See [pill calibration](docs/SPEC.md#pill-container-calibration) for original-size reference comparisons.
 
 ## Build
 

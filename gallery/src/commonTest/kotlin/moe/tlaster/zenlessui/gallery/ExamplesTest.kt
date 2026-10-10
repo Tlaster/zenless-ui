@@ -4,6 +4,12 @@ import kotlin.test.*
 import moe.tlaster.zenlessui.*
 
 class ExamplesTest {
+    @Test fun pillExampleKeepsSelectionEnabledWidthAndTextInSync() {
+        val code = pillExample("A \"pill\"", true, false, true)
+        listOf("mutableStateOf(true)", "enabled = false", "Modifier.fillMaxWidth()", "selected = !selected", "ZenlessText(\"A \\\"pill\\\"\")")
+            .forEach { assertTrue(it in code, it) }
+        assertFalse("fillMaxWidth" in pillExample("Short", false, true, false))
+    }
     @Test fun codeEscapesTextIncludingInterpolation() {
         assertEquals("\"a\\\"b\\\\c\\n\\\$value\"", quote("a\"b\\c\n\$value"))
     }
