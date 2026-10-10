@@ -32,7 +32,6 @@ class PressedInkTest {
         setContent { CompositionLocalProvider(LocalDensity provides Density(1f)) { ZenlessTheme {
             Row(Modifier.padding(16.dp),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
                 ZenlessCard(Modifier.size(90.dp,60.dp).testTag("card"),onClick={}) {}
-                ZenlessRadioButton(false,{},Modifier.testTag("radio"))
                 ZenlessTextField("Text",{},Modifier.width(180.dp).testTag("field"),readOnly=true)
             }
         } } }
@@ -41,7 +40,7 @@ class PressedInkTest {
             return listOf(1,minOf(20,pixels.width/2),pixels.width/2).map { pixels[it,pixels.height/2] }
         }
         mainClock.advanceTimeBy(200)
-        for(tag in listOf("card","radio","field")) {
+        for(tag in listOf("card","field")) {
             val control=onNodeWithTag(tag)
             if(tag=="field") { control.performTouchInput { click() };mainClock.advanceTimeBy(240) }
             val resting=surface(control)

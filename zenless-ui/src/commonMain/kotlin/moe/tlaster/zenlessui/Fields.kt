@@ -69,6 +69,21 @@ internal fun nextCheckState(state: ToggleableState): ToggleableState = if (state
 @Composable
 public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableState) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, label: String = "", size: ZenlessSize = LocalControlSize.current) {
     val source = remember { MutableInteractionSource() }
+    SelectionCapsule(state, source, modifier.heightIn(min = size.height.dp).focusProperties { canFocus = false }
+        .triStateToggleable(state, source, null, enabled, Role.Checkbox) { onStateChange(nextCheckState(state)) }, enabled, label, size, radio = false)
+}
+
+/** Caller-owned single selection; activating an already selected row does not replay its animation. */
+@Composable
+public fun ZenlessRadioButton(selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, label: String = "", size: ZenlessSize = LocalControlSize.current) {
+    val source = remember { MutableInteractionSource() }
+    SelectionCapsule(if (selected) ToggleableState.On else ToggleableState.Off, source,
+        modifier.heightIn(min = size.height.dp).focusProperties { canFocus = false }
+            .selectable(selected, source, null, enabled, Role.RadioButton, onClick), enabled, label, size, radio = true)
+}
+
+@Composable
+private fun SelectionCapsule(state: ToggleableState, source: MutableInteractionSource, modifier: Modifier, enabled: Boolean, label: String, size: ZenlessSize, radio: Boolean) {
     val pressed by source.collectIsPressedAsState()
     val rim by animateFloatAsState(if (pressed && enabled) 1f else 0f, tween(100, easing = LinearEasing))
     // shortcut: input timestamps are absent; retain the shared rim cycle until a timed hold capture is available.
@@ -77,9 +92,7 @@ public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableSta
         if (enabled && state == ToggleableState.On) tween(400, easing = LinearEasing) else snap())
     val scale = size.iconSize / 28f
     val verticalInset = ((size.height - 38 * scale) / 2).dp
-    Row(modifier.heightIn(min = size.height.dp).focusProperties { canFocus = false }
-        .triStateToggleable(state, source, null, enabled, Role.Checkbox) { onStateChange(nextCheckState(state)) }
-        .drawWithCache {
+    Row(modifier.drawWithCache {
             val inset = verticalInset.toPx().coerceAtMost(this.size.height / 2)
             val bounds = Rect(0f, inset, this.size.width, this.size.height - inset)
             val radius = minOf(19 * scale.dp.toPx(), bounds.minDimension / 2)
@@ -96,7 +109,7 @@ public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableSta
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((12 * scale).dp)) {
         Canvas(Modifier.size(size.iconSize.dp)) {
             scale(this.size.width / 56f, this.size.height / 56f, Offset.Zero) {
-                val pose = checkboxPose(if (state == ToggleableState.On && enabled) progress else 1f)
+                val pose = selectionPose(if (state == ToggleableState.On && enabled) progress else 1f)
                 translate(28.4f + pose[3], 28f) {
                     rotate(pose[2], Offset.Zero) {
                         scale(pose[0], pose[1], Offset.Zero) {
@@ -107,6 +120,11 @@ public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableSta
                             drawCircle(ring, 21.75f, Offset.Zero, style = Stroke(6.17f))
                             when {
                                 state == ToggleableState.Indeterminate -> drawLine(ink, Offset(-12f, 0f), Offset(12f, 0f), 5f, StrokeCap.Round)
+                                state == ToggleableState.On && radio -> {
+                                    // shortcut: dot growth is inferred from Checkbox; recalibrate when a Radio reference is available.
+                                    val growth = if (enabled) Motion.smoothEasing.transform(((progress - .25f) / .35f).coerceIn(0f, 1f)) else 1f
+                                    drawCircle(ink, 14f * growth, Offset.Zero)
+                                }
                                 state == ToggleableState.On && progress >= .25f -> {
                                     val reveal = ((progress - .25f) / .3f).coerceIn(0f, 1f)
                                     clipRect(-30f, -30f, -25f + 55f * reveal, 30f) {
@@ -126,8 +144,8 @@ public fun ZenlessCheckbox(state: ToggleableState, onStateChange: (ToggleableSta
     }
 }
 
-// Sampled projection keyframes: time, scale X/Y, roll, translation X in the 56px icon.
-private val checkboxFrames = arrayOf(
+// Checkbox's sampled projection, shared with Radio: time, scale X/Y, roll, translation X in the 56px icon.
+private val selectionFrames = arrayOf(
     floatArrayOf(0f, 1f, 1f, 0f, 0f),
     floatArrayOf(67f, 1.18f, .48f, 0f, 0f),
     floatArrayOf(108f, .98f, .8f, -5f, -1f),
@@ -137,10 +155,10 @@ private val checkboxFrames = arrayOf(
     floatArrayOf(400f, 1f, 1f, 0f, 0f),
 )
 
-private fun checkboxPose(progress: Float): FloatArray {
+private fun selectionPose(progress: Float): FloatArray {
     val time = progress.coerceIn(0f, 1f) * 400
-    val index = checkboxFrames.indexOfFirst { it[0] >= time }.coerceAtLeast(1)
-    val from = checkboxFrames[index - 1]; val to = checkboxFrames[index]
+    val index = selectionFrames.indexOfFirst { it[0] >= time }.coerceAtLeast(1)
+    val from = selectionFrames[index - 1]; val to = selectionFrames[index]
     val fraction = Motion.smoothEasing.transform((time - from[0]) / (to[0] - from[0]))
     return FloatArray(4) { from[it + 1] + (to[it + 1] - from[it + 1]) * fraction }
 }
@@ -153,21 +171,6 @@ private val checkboxCheck = Path().apply {
     lineTo(22.7f, -9.3f); quadraticTo(24.1f, -11.1f, 22.2f, -12.5f)
     lineTo(19.3f, -14.3f); quadraticTo(17.8f, -15.2f, 16.4f, -13.4f)
     lineTo(-1f, 7.1f); close()
-}
-
-@Composable
-public fun ZenlessRadioButton(selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, label: String = "", size: ZenlessSize = LocalControlSize.current) {
-    val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled)
-    val fraction by animateFloatAsState(if (selected) 1f else 0f, tween(160))
-    val indicator = size.iconSize.dp
-    Row(modifier.heightIn(min = size.height.dp).focusProperties { canFocus = false }.selectable(selected, source, null, enabled, Role.RadioButton, onClick).padding(6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Canvas(Modifier.size(indicator).plate(feedback, pattern = false,enabled=enabled)) {
-            drawCircle(if (enabled) Palette.signal else Palette.muted, indicator.toPx() / 4 * fraction)
-        }
-        if (label.isNotEmpty()) CompositionLocalProvider(LocalInk provides if (enabled) Color.White else Palette.muted, LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(label) }
-    }
 }
 
 @Composable
