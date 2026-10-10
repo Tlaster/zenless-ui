@@ -23,7 +23,9 @@ public enum class ZenlessSize(
 ) {
     Compact(40, 14, 22, 17),
     Default(52, 20, 28, 22),
-    Comfortable(62, 24, 34, 26),
+    Comfortable(62, 24, 34, 26);
+
+    internal val scale: Float get() = height / 52f
 }
 public enum class ZenlessButtonVariant { Filled, Plain, Hollow }
 public enum class ZenlessTextStyle { Inherit, Title, Subtitle, Body, Caption, Number }

@@ -32,20 +32,21 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
     val position by key(items.size,folder,rtl) {
         animateFloatAsState((if(rtl)items.lastIndex-selectedIndex else selectedIndex).toFloat(),tween(280,easing=CubicBezierEasing(.22f,1f,.36f,1f)))
     }
-    val outlineWidth=with(LocalDensity.current) { 4.dp.toPx() }
+    val folderScale=size.height/84f
+    val outlineWidth=with(LocalDensity.current) { (4*folderScale).dp.toPx() }
     Row(modifier.then(if (!folder) Modifier.plate(base).drawWithCache {
         onDrawBehind {
             drawPath(tabIndicatorPath(position,this.size.width/items.size,items.lastIndex,indicator.seconds,expand),mix(Color.Yellow,Color(0xff80c800),Motion.color(indicator.seconds)))
         }
-    } else Modifier.height(84.dp).drawWithCache {
+    } else Modifier.heightIn(min=size.height.dp).drawWithCache {
         onDrawBehind {
-            val y=this.size.height-8.5.dp.toPx()
-            drawLine(Color.Black,Offset(7.5.dp.toPx(),y),Offset(this.size.width-7.5.dp.toPx(),y),3.dp.toPx(),StrokeCap.Round)
-            drawCircle(Color.Black,7.5.dp.toPx(),Offset(7.5.dp.toPx(),y))
-            drawCircle(Color.Black,7.5.dp.toPx(),Offset(this.size.width-7.5.dp.toPx(),y))
+            val y=this.size.height-(8.5*folderScale).dp.toPx()
+            drawLine(Color.Black,Offset((7.5*folderScale).dp.toPx(),y),Offset(this.size.width-(7.5*folderScale).dp.toPx(),y),(3*folderScale).dp.toPx(),StrokeCap.Round)
+            drawCircle(Color.Black,(7.5*folderScale).dp.toPx(),Offset((7.5*folderScale).dp.toPx(),y))
+            drawCircle(Color.Black,(7.5*folderScale).dp.toPx(),Offset(this.size.width-(7.5*folderScale).dp.toPx(),y))
         }
-    }).padding(horizontal=if(folder)14.dp else 0.dp).padding(bottom=if(folder)6.dp else 0.dp),
-        horizontalArrangement=Arrangement.spacedBy(if(folder)3.5.dp else 0.dp), verticalAlignment=Alignment.Bottom) {
+    }).padding(horizontal=if(folder)(14*folderScale).dp else 0.dp).padding(bottom=if(folder)(6*folderScale).dp else 0.dp),
+        horizontalArrangement=Arrangement.spacedBy(if(folder)(3.5*folderScale).dp else 0.dp), verticalAlignment=Alignment.Bottom) {
         items.forEachIndexed { index, title ->
             val selected=selectedIndex==index
             val visualIndex=if(rtl)items.lastIndex-index else index
@@ -53,27 +54,27 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
             val hovered by source.collectIsHoveredAsState()
             val rise by animateFloatAsState(if(selected)0f else 7f,tween(160,easing=CubicBezierEasing(0f,0f,.58f,1f)))
             val emphasis by animateFloatAsState(if(selected)1f else 0f,tween(160,easing=CubicBezierEasing(0f,0f,.58f,1f)))
-            Box(Modifier.weight(1f).heightIn(min=if(folder)78.dp else size.height.dp).semantics { this.selected=selected }
+            Box(Modifier.weight(1f).heightIn(min=if(folder)(78*folderScale).dp else size.height.dp).semantics { this.selected=selected }
                 .hoverable(source).drawWithCache {
                     onDrawBehind {
                         if(folder) {
-                            val top=rise.dp.toPx()
+                            val top=(rise*folderScale).dp.toPx()
                             val rect=Rect(0f,top,this.size.width,this.size.height)
-                            val shape=Path().apply {addRoundRect(RoundRect(rect,CornerRadius(18.dp.toPx()),CornerRadius(18.dp.toPx()),CornerRadius.Zero,CornerRadius.Zero))}
+                            val shape=Path().apply {addRoundRect(RoundRect(rect,CornerRadius((18*folderScale).dp.toPx()),CornerRadius((18*folderScale).dp.toPx()),CornerRadius.Zero,CornerRadius.Zero))}
                             clipPath(shape) {
                                 drawRect(Brush.verticalGradient(listOf(mix(Color(0xff555555),Color(0xffffe600),emphasis),mix(Color(0xff262626),Color(0xffffb500),emphasis)),startY=top,endY=this.size.height))
                                 val canvasSize=this.size
                                 val motif=Path().apply {
-                                    moveTo(12.dp.toPx(),top+9.dp.toPx());lineTo(canvasSize.width*.42f,top+9.dp.toPx());lineTo(canvasSize.width*.35f,top+24.dp.toPx());lineTo(18.dp.toPx(),top+32.dp.toPx());close()
-                                    moveTo(15.dp.toPx(),canvasSize.height-24.dp.toPx());lineTo(canvasSize.width*.52f,top+28.dp.toPx());lineTo(canvasSize.width*.47f,top+38.dp.toPx());lineTo(18.dp.toPx(),canvasSize.height-10.dp.toPx());close()
+                                    moveTo((12*folderScale).dp.toPx(),top+(9*folderScale).dp.toPx());lineTo(canvasSize.width*.42f,top+(9*folderScale).dp.toPx());lineTo(canvasSize.width*.35f,top+(24*folderScale).dp.toPx());lineTo((18*folderScale).dp.toPx(),top+(32*folderScale).dp.toPx());close()
+                                    moveTo((15*folderScale).dp.toPx(),canvasSize.height-(24*folderScale).dp.toPx());lineTo(canvasSize.width*.52f,top+(28*folderScale).dp.toPx());lineTo(canvasSize.width*.47f,top+(38*folderScale).dp.toPx());lineTo((18*folderScale).dp.toPx(),canvasSize.height-(10*folderScale).dp.toPx());close()
                                 }
                                 drawPath(motif,Color.White.copy(alpha=.045f))
-                                drawRect(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.8f)),startY=this.size.height-12.dp.toPx(),endY=this.size.height))
+                                drawRect(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.8f)),startY=this.size.height-(12*folderScale).dp.toPx(),endY=this.size.height))
                                 if(hovered && !selected)drawRect(Color.White.copy(alpha=.025f))
                             }
-                            drawPath(shape,Color.Black,style=Stroke(2.5.dp.toPx()))
-                            val lip=Path().apply {addRoundRect(RoundRect(rect.deflate(3.dp.toPx()),CornerRadius(15.dp.toPx()),CornerRadius(15.dp.toPx()),CornerRadius.Zero,CornerRadius.Zero))}
-                            clipRect(bottom=top+22.dp.toPx()) { drawPath(lip,Brush.verticalGradient(listOf(Color.White.copy(alpha=.12f),Color.Transparent),startY=top,endY=top+22.dp.toPx()),style=Stroke(2.dp.toPx())) }
+                            drawPath(shape,Color.Black,style=Stroke((2.5*folderScale).dp.toPx()))
+                            val lip=Path().apply {addRoundRect(RoundRect(rect.deflate((3*folderScale).dp.toPx()),CornerRadius((15*folderScale).dp.toPx()),CornerRadius((15*folderScale).dp.toPx()),CornerRadius.Zero,CornerRadius.Zero))}
+                            clipRect(bottom=top+(22*folderScale).dp.toPx()) { drawPath(lip,Brush.verticalGradient(listOf(Color.White.copy(alpha=.12f),Color.Transparent),startY=top,endY=top+(22*folderScale).dp.toPx()),style=Stroke((2*folderScale).dp.toPx())) }
                         }
                     }
                 }.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }
@@ -90,8 +91,8 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
                         }
                     }
                 })
-                .padding(horizontal=if(folder)12.dp else size.horizontalPadding.dp).padding(top=if(folder)rise.dp else 0.dp),contentAlignment=Alignment.Center) {
-                val style=LocalTextStyle.current.copy(fontSize=if(folder)28.sp else size.fontSize.sp,letterSpacing=0.sp,
+                .padding(horizontal=if(folder)(12*folderScale).dp else size.horizontalPadding.dp).padding(top=if(folder)(rise*folderScale).dp else 0.dp),contentAlignment=Alignment.Center) {
+                val style=LocalTextStyle.current.copy(fontSize=size.fontSize.sp,letterSpacing=0.sp,
                     fontWeight=if(folder)FontWeight.Bold else FontWeight.Normal,color=if(folder)mix(Color(0xffb7b8b8),Color.Black,emphasis) else Color.White)
                 if(folder && emphasis<1f) BasicText(title,modifier=Modifier.clearAndSetSemantics {},style=style.copy(color=Color.Black.copy(alpha=1-emphasis),drawStyle=Stroke(outlineWidth)),maxLines=1,overflow=TextOverflow.Ellipsis)
                 BasicText(title,style=style,maxLines=1,overflow=TextOverflow.Ellipsis)
@@ -113,26 +114,27 @@ private fun DrawScope.tabIndicatorPath(position:Float,tabWidth:Float,lastIndex:I
 @Composable
 public fun ZenlessNavigation(items: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier, size: ZenlessSize = LocalControlSize.current) {
     require(selectedIndex in items.indices)
-    Box(modifier.background(Color.Black,RoundedCornerShape(20.dp)).border(3.dp,Color(0xff404040),RoundedCornerShape(20.dp))) {
-        Column(Modifier.padding(horizontal=12.dp,vertical=59.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+    val scale=size.scale
+    Box(modifier.background(Color.Black,RoundedCornerShape((20*scale).dp)).border((3*scale).dp,Color(0xff404040),RoundedCornerShape((20*scale).dp))) {
+        Column(Modifier.padding(horizontal=(12*scale).dp,vertical=(59*scale).dp),verticalArrangement=Arrangement.spacedBy((3*scale).dp)) {
             items.forEachIndexed { index,text ->
                 val source=remember { MutableInteractionSource() }
                 val selected=selectedIndex==index
                 val feedback=rememberFeedback(source,selected,true)
                 Box(Modifier.fillMaxWidth().heightIn(min=size.height.dp).semantics { this.selected=selected }
                     .drawWithCache { onDrawBehind {
-                        drawLine(Color(0xff181818),Offset(0f,this.size.height-1.5.dp.toPx()),Offset(this.size.width,this.size.height-1.5.dp.toPx()),3.dp.toPx())
-                        if(feedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)).copy(alpha=feedback.highlight),cornerRadius=CornerRadius(6.dp.toPx()))
-                    }}.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp,vertical=6.dp),contentAlignment=Alignment.CenterStart) {
+                        drawLine(Color(0xff181818),Offset(0f,this.size.height-(1.5*scale).dp.toPx()),Offset(this.size.width,this.size.height-(1.5*scale).dp.toPx()),(3*scale).dp.toPx())
+                        if(feedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(feedback.seconds)).copy(alpha=feedback.highlight),cornerRadius=CornerRadius((6*scale).dp.toPx()))
+                    }}.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp,vertical=(6*scale).dp),contentAlignment=Alignment.CenterStart) {
                     CompositionLocalProvider(LocalInk provides mix(if(selected)Color.Black else Color.White,Color.Black,feedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(text,maxLines=1) }
                 }
             }
         }
-        for(top in listOf(true,false)) Canvas(Modifier.align(if(top)Alignment.TopCenter else Alignment.BottomCenter).padding(horizontal=7.dp,vertical=8.dp).fillMaxWidth().height(26.dp)) {
-            drawRoundRect(Color(0xff323232),cornerRadius=CornerRadius(13.dp.toPx()))
-            clipRect(bottom=1.dp.toPx()) { drawRoundRect(Color(0xff404040),cornerRadius=CornerRadius(13.dp.toPx())) }
+        for(top in listOf(true,false)) Canvas(Modifier.align(if(top)Alignment.TopCenter else Alignment.BottomCenter).padding(horizontal=(7*scale).dp,vertical=(8*scale).dp).fillMaxWidth().height((26*scale).dp)) {
+            drawRoundRect(Color(0xff323232),cornerRadius=CornerRadius((13*scale).dp.toPx()))
+            clipRect(bottom=scale.dp.toPx()) { drawRoundRect(Color(0xff404040),cornerRadius=CornerRadius((13*scale).dp.toPx())) }
             val canvasSize=this.size
-            val p=Path().apply { val cy=canvasSize.height/2; moveTo(canvasSize.width/2-18.dp.toPx(),cy+(if(top)5 else -5).dp.toPx());lineTo(canvasSize.width/2+18.dp.toPx(),cy+(if(top)5 else -5).dp.toPx());lineTo(canvasSize.width/2,cy+(if(top)-5 else 5).dp.toPx());close() }
+            val p=Path().apply { val cy=canvasSize.height/2; moveTo(canvasSize.width/2-(18*scale).dp.toPx(),cy+((if(top)5 else -5)*scale).dp.toPx());lineTo(canvasSize.width/2+(18*scale).dp.toPx(),cy+((if(top)5 else -5)*scale).dp.toPx());lineTo(canvasSize.width/2,cy+((if(top)-5 else 5)*scale).dp.toPx());close() }
             drawPath(p,Color.Black)
         }
     }

@@ -165,13 +165,13 @@ public fun ZenlessSelect(
                     }
                 }
             }
-            if(scroll.canScrollForward)Mark(Mark.Down,Modifier.padding(top=4.dp).size(40.dp,20.dp))
+            if(scroll.canScrollForward)Mark(Mark.Down,Modifier.padding(top=4.dp).size((40*size.scale).dp,(20*size.scale).dp))
         }
     }
 }
 
 @Composable
-public fun ZenlessTooltip(text: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+public fun ZenlessTooltip(text: String, modifier: Modifier = Modifier, size: ZenlessSize = LocalControlSize.current, content: @Composable () -> Unit) {
     val context = checkNotNull(LocalOverlays.current) { "ZenlessTooltip requires ZenlessOverlayHost" }
     val id = remember { Any() }
     var hovered by remember { mutableStateOf(false) }
@@ -208,8 +208,10 @@ public fun ZenlessTooltip(text: String, modifier: Modifier = Modifier, content: 
         }
     }) {
         content()
-        if (visible) AnchoredOverlay(anchor, with(density) { 8.dp.roundToPx() }, false, { context.tooltip = null }) {
-            Box(Modifier.widthIn(max = 280.dp).background(Color.Black, RoundedCornerShape(10.dp)).border(1.dp, Palette.line, RoundedCornerShape(10.dp)).padding(12.dp).semantics { liveRegion = LiveRegionMode.Polite }) { ZenlessText(text) }
+        if (visible) AnchoredOverlay(anchor, with(density) { (8*size.scale).dp.roundToPx() }, false, { context.tooltip = null }) {
+            Box(Modifier.widthIn(max = (280*size.scale).dp).background(Color.Black, RoundedCornerShape((10*size.scale).dp)).border(size.scale.dp, Palette.line, RoundedCornerShape((10*size.scale).dp)).padding((12*size.scale).dp).semantics { liveRegion = LiveRegionMode.Polite }) {
+                CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(text) }
+            }
         }
     }
 }
@@ -267,37 +269,38 @@ private fun Modal(visible: Boolean, onDismiss: (() -> Unit)?, drawer: Boolean, c
 @Composable
 public fun ZenlessAlert(
     visible: Boolean, message: String, confirmText: String, onConfirm: () -> Unit,
-    onDismissRequest: (() -> Unit)? = null, cancelText: String? = null,
+    onDismissRequest: (() -> Unit)? = null, cancelText: String? = null, size: ZenlessSize = LocalControlSize.current,
 ) {
+    val scale=size.scale
     Modal(visible, onDismissRequest, false) { frame, ready, close ->
         val currentConfirm by rememberUpdatedState(onConfirm)
-        val density = LocalDensity.current
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment=Alignment.Center) {
             val narrow=maxWidth<600.dp
-            val actionWidth=if(narrow)(maxWidth-50.dp)/2 else 272.dp
-            val messageWidth=(maxWidth*.8f).coerceAtMost(1100.dp)
-            Box(Modifier.fillMaxWidth().heightIn(min=186.dp,max=(maxHeight-100.dp).coerceAtLeast(186.dp)).pointerInput(Unit){detectTapGestures{}}) {
+            val actionWidth=if(narrow)(maxWidth-(50*scale).dp)/2 else (272*scale).dp
+            val actionsMaxWidth=(maxWidth-(24*scale).dp).coerceAtLeast(0.dp)
+            val messageWidth=(maxWidth*.8f).coerceAtMost((1100*scale).dp)
+            Box(Modifier.fillMaxWidth().heightIn(min=(186*scale).dp,max=(maxHeight-(100*scale).dp).coerceAtLeast((186*scale).dp)).pointerInput(Unit){detectTapGestures{}}) {
                 Canvas(Modifier.matchParentSize().graphicsLayer { scaleY=frame.band.coerceAtLeast(.001f);alpha=frame.band;clip=true }) {
                     drawRect(Color.Black)
-                    val w=size.width;val h=size.height
-                    val art=Path().apply { moveTo(-30.dp.toPx(),-40.dp.toPx());lineTo(w*.22f,-90.dp.toPx());lineTo(w*.25f,h*.65f);lineTo(0f,h*1.3f);close() }
+                    val w=this.size.width;val h=this.size.height
+                    val art=Path().apply { moveTo(-(30*scale).dp.toPx(),-(40*scale).dp.toPx());lineTo(w*.22f,-(90*scale).dp.toPx());lineTo(w*.25f,h*.65f);lineTo(0f,h*1.3f);close() }
                     drawPath(art,Color(.035f,.035f,.035f,frame.artwork))
-                    val cut=Path().apply { moveTo(0f,h*.3f);cubicTo(w*.1f,h*.8f,w*.14f,-h,w*.24f,-20.dp.toPx()) }
-                    drawPath(cut,Color.Black,style=Stroke(12.dp.toPx()))
+                    val cut=Path().apply { moveTo(0f,h*.3f);cubicTo(w*.1f,h*.8f,w*.14f,-h,w*.24f,-(20*scale).dp.toPx()) }
+                    drawPath(cut,Color.Black,style=Stroke((12*scale).dp.toPx()))
                     val right=Path().apply { moveTo(w*.76f,h);lineTo(w,h*.32f);lineTo(w,h*1.2f);close() }
                     drawPath(right,Color(.035f,.035f,.035f,frame.artwork))
-                    val step=3.dp.toPx()
-                    for(i in 0..((w+h)/step).toInt()) { val x=i*step-h;drawLine(Color(.12f,.12f,.12f,.12f*frame.artwork),Offset(x,0f),Offset(x+h,h),1.dp.toPx()) }
-                    drawRect(Color(0xff343434),size=Size(w,2.dp.toPx()))
-                    drawRect(Color(0xff343434),topLeft=Offset(0f,h-2.dp.toPx()),size=Size(w,2.dp.toPx()))
+                    val step=(3*scale).dp.toPx()
+                    for(i in 0..((w+h)/step).toInt()) { val x=i*step-h;drawLine(Color(.12f,.12f,.12f,.12f*frame.artwork),Offset(x,0f),Offset(x+h,h),scale.dp.toPx()) }
+                    drawRect(Color(0xff343434),size=Size(w,(2*scale).dp.toPx()))
+                    drawRect(Color(0xff343434),topLeft=Offset(0f,h-(2*scale).dp.toPx()),size=Size(w,(2*scale).dp.toPx()))
                     drawRect(Color(0xff999999).copy(alpha=frame.flash))
                 }
-                Box(Modifier.align(Alignment.TopCenter).width(messageWidth).padding(top=58.dp,bottom=92.dp).verticalScroll(rememberScrollState()).graphicsLayer { alpha=frame.ink;translationY=(-9).dp.toPx()*(1-frame.ink) }) {
-                    CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=26.sp,lineHeight=36.sp,textAlign=TextAlign.Center)) { ZenlessText(message,Modifier.fillMaxWidth()) }
+                Box(Modifier.align(Alignment.TopCenter).width(messageWidth).padding(top=(58*scale).dp,bottom=(92*scale).dp).verticalScroll(rememberScrollState()).graphicsLayer { alpha=frame.ink;translationY=(-9*scale).dp.toPx()*(1-frame.ink) }) {
+                    CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=(26*scale).sp,lineHeight=(36*scale).sp,textAlign=TextAlign.Center)) { ZenlessText(message,Modifier.fillMaxWidth()) }
                 }
-                Row(Modifier.align(Alignment.BottomCenter).offset(y=28.dp).graphicsLayer { alpha=frame.ink;translationY=(-9).dp.toPx()*(1-frame.ink) },horizontalArrangement=Arrangement.spacedBy(26.dp)) {
-                    if(cancelText!=null && onDismissRequest!=null)AlertAction(cancelText,false,ready,actionWidth) {close(onDismissRequest)}
-                    AlertAction(confirmText,true,ready,actionWidth) {close {currentConfirm()}}
+                FlowRow(Modifier.align(Alignment.BottomCenter).widthIn(max=actionsMaxWidth).offset(y=(size.height/2f).dp).graphicsLayer { alpha=frame.ink;translationY=(-9*scale).dp.toPx()*(1-frame.ink) },horizontalArrangement=Arrangement.spacedBy((26*scale).dp,Alignment.CenterHorizontally),verticalArrangement=Arrangement.spacedBy((12*scale).dp)) {
+                    if(cancelText!=null && onDismissRequest!=null)AlertAction(cancelText,false,ready,actionWidth,size) {close(onDismissRequest)}
+                    AlertAction(confirmText,true,ready,actionWidth,size) {close {currentConfirm()}}
                 }
             }
         }
@@ -305,10 +308,10 @@ public fun ZenlessAlert(
 }
 
 @Composable
-private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,onClick:()->Unit) {
-    ZenlessButton(onClick,Modifier.width(width).heightIn(min=56.dp),
-        tone=if(confirm)ZenlessTone.Success else ZenlessTone.Danger,size=ZenlessSize.Default,enabled=enabled,
-        leadingIcon={Mark(if(confirm)Mark.Check else Mark.Close,Modifier.size(26.dp))},
+private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,size:ZenlessSize,onClick:()->Unit) {
+    ZenlessButton(onClick,Modifier.widthIn(min=width),
+        tone=if(confirm)ZenlessTone.Success else ZenlessTone.Danger,size=size,enabled=enabled,
+        leadingIcon={Mark(if(confirm)Mark.Check else Mark.Close,Modifier.fillMaxSize())},
     ) {
         ZenlessText(text,maxLines=1)
     }
@@ -317,45 +320,48 @@ private fun AlertAction(text:String,confirm:Boolean,enabled:Boolean,width:Dp,onC
 @Composable
 public fun ZenlessDrawer(
     visible: Boolean, title: String, closeDescription: String, onDismissRequest: () -> Unit,
-    footer: @Composable RowScope.() -> Unit = {}, content: @Composable ColumnScope.() -> Unit,
+    footer: @Composable RowScope.() -> Unit = {}, size: ZenlessSize = LocalControlSize.current, content: @Composable ColumnScope.() -> Unit,
 ) {
+    val scale=size.scale
     Modal(visible, onDismissRequest, true) { frame, ready, close ->
-        BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.CenterEnd) {
-            val narrow=maxWidth<420.dp
-            Column(Modifier.width(if(maxWidth<600.dp)maxWidth else (maxWidth*.46f).coerceAtMost(680.dp)).fillMaxHeight().graphicsLayer {translationX=size.width*(1-frame.band)}
-                .background(Color.Black).padding(start=3.dp).pointerInput(Unit){detectTapGestures{}}) {
-                Box(Modifier.fillMaxWidth().height(96.dp)) {
-                    Box(Modifier.fillMaxSize().padding(start=40.dp,end=if(narrow)130.dp else 180.dp,top=24.dp),contentAlignment=Alignment.CenterStart) {
-                        CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=26.sp)) { ZenlessText(title,maxLines=1) }
+        CompositionLocalProvider(LocalControlSize provides size, LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) {
+            BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.CenterEnd) {
+                val narrow=maxWidth<420.dp
+                Column(Modifier.width(if(maxWidth<600.dp)maxWidth else (maxWidth*.46f).coerceAtMost(680.dp)).fillMaxHeight().graphicsLayer {translationX=this.size.width*(1-frame.band)}
+                    .background(Color.Black).padding(start=(3*scale).dp).pointerInput(Unit){detectTapGestures{}}) {
+                    Box(Modifier.fillMaxWidth().height((96*scale).dp)) {
+                        Box(Modifier.fillMaxSize().padding(start=(40*scale).dp,end=if(narrow)(130*scale).dp else (180*scale).dp,top=(24*scale).dp),contentAlignment=Alignment.CenterStart) {
+                            CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(fontSize=(26*scale).sp)) { ZenlessText(title,maxLines=1) }
+                        }
+                        ZenlessCloseButton({close(onDismissRequest)},closeDescription,Modifier.align(Alignment.TopEnd).padding(top=(20*scale).dp,end=if(narrow)(24*scale).dp else (66*scale).dp),enabled=ready)
                     }
-                    ZenlessCloseButton({close(onDismissRequest)},closeDescription,Modifier.align(Alignment.TopEnd).padding(top=20.dp,end=if(narrow)24.dp else 66.dp),enabled=ready)
-                }
-                Box(Modifier.weight(1f).fillMaxWidth().background(Color(0xff1a1a1a)).drawWithCache { val checks=checkerPaint(Color(0xff202020));onDrawBehind {checker(checks)} }.padding(horizontal=34.dp,vertical=24.dp)) {
-                    val scroll=rememberScrollState()
-                    Row(Modifier.fillMaxSize().background(Color(0xff050505),RoundedCornerShape(18.dp)).padding(12.dp)) {
-                        Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).verticalScroll(scroll).padding(18.dp),verticalArrangement=Arrangement.spacedBy(18.dp),content=content)
-                        if(scroll.maxValue>0)DrawerScrollbar(scroll)
+                    Box(Modifier.weight(1f).fillMaxWidth().background(Color(0xff1a1a1a)).drawWithCache { val checks=checkerPaint(Color(0xff202020));onDrawBehind {checker(checks)} }.padding(horizontal=(34*scale).dp,vertical=(24*scale).dp)) {
+                        val scroll=rememberScrollState()
+                        Row(Modifier.fillMaxSize().background(Color(0xff050505),RoundedCornerShape((18*scale).dp)).padding((12*scale).dp)) {
+                            Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape((6*scale).dp)).verticalScroll(scroll).padding((18*scale).dp),verticalArrangement=Arrangement.spacedBy((18*scale).dp),content=content)
+                            if(scroll.maxValue>0)DrawerScrollbar(scroll,scale)
+                        }
                     }
+                    Row(Modifier.fillMaxWidth().background(Color.Black).padding(start=(34*scale).dp,end=(34*scale).dp,top=(24*scale).dp,bottom=(24*scale).dp),horizontalArrangement=Arrangement.spacedBy((16*scale).dp),content=footer)
                 }
-                Row(Modifier.fillMaxWidth().background(Color.Black).padding(start=34.dp,end=34.dp,top=24.dp,bottom=24.dp),horizontalArrangement=Arrangement.spacedBy(16.dp),content=footer)
             }
         }
     }
 }
 
 @Composable
-private fun DrawerScrollbar(scroll: ScrollState) {
+private fun DrawerScrollbar(scroll: ScrollState, scale: Float) {
     val scope=rememberCoroutineScope()
-    BoxWithConstraints(Modifier.width(10.dp).fillMaxHeight()) {
+    BoxWithConstraints(Modifier.width((10*scale).dp).fillMaxHeight()) {
         val height=with(LocalDensity.current){maxHeight.toPx()}
         val thumb=(height*scroll.viewportSize/(scroll.viewportSize+scroll.maxValue).coerceAtLeast(1))
-            .coerceIn(with(LocalDensity.current){30.dp.toPx()}.coerceAtMost(height),height)
+            .coerceIn(with(LocalDensity.current){(30*scale).dp.toPx()}.coerceAtMost(height),height)
         val travel=(height-thumb).coerceAtLeast(1f)
         Canvas(Modifier.fillMaxSize().semantics { contentDescription="Scroll" }
             .pointerInput(travel,thumb) { detectTapGestures { point -> scope.launch { scroll.scrollTo(((point.y-thumb/2)/travel*scroll.maxValue).roundToInt().coerceIn(0,scroll.maxValue)) } } }
             .pointerInput(travel) { detectVerticalDragGestures { change,delta -> change.consume();scroll.dispatchRawDelta(delta/travel*scroll.maxValue) } }) {
-            drawRect(Color(0xff303030),Offset(4.dp.toPx(),0f),Size(2.dp.toPx(),height))
-            drawRoundRect(Color(0xff777777),Offset(1.dp.toPx(),travel*scroll.value/scroll.maxValue.coerceAtLeast(1)),Size(8.dp.toPx(),thumb),CornerRadius(4.dp.toPx()))
+            drawRect(Color(0xff303030),Offset((4*scale).dp.toPx(),0f),Size((2*scale).dp.toPx(),height))
+            drawRoundRect(Color(0xff777777),Offset(scale.dp.toPx(),travel*scroll.value/scroll.maxValue.coerceAtLeast(1)),Size((8*scale).dp.toPx(),thumb),CornerRadius((4*scale).dp.toPx()))
         }
     }
 }

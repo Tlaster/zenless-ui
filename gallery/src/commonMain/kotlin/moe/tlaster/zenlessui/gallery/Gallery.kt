@@ -161,7 +161,9 @@ public fun GalleryApp() {
                 ZenlessButton({},leadingIcon={CallerIcon()}) { ZenlessText(tr("Action", "操作")) }
                 ZenlessSwitch(true,{})
                 ZenlessCheckbox(ToggleableState.On,{},label=tr("Option", "选项"))
+                ZenlessBackButton({},tr("Back", "返回")); ZenlessCloseButton({},tr("Close", "关闭")); ZenlessSpinner()
             }
+            ZenlessTabs(listOf(tr("Files", "文件"),tr("Details", "详情")),0,{},folder=true)
         }
     }
     Preview(tr("Fixed semantic tones", "固定语义配色")) {

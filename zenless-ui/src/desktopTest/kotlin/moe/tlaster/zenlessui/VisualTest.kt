@@ -68,7 +68,7 @@ class VisualTest {
         setContent {
             CompositionLocalProvider(LocalDensity provides Density(2f)) {
                 Box(Modifier.requiredSize(94.dp,64.dp).background(Color.Black)) {
-                    ZenlessCloseButton({clicks++},"Close",Modifier.offset(2.dp,2.dp),enabled)
+                    ZenlessCloseButton({clicks++},"Close",Modifier.offset(2.dp,2.dp).size(90.dp,60.dp),enabled)
                 }
             }
         }
@@ -160,7 +160,7 @@ class VisualTest {
         setContent {
             CompositionLocalProvider(LocalDensity provides Density(2f)) {
                 Box(Modifier.requiredSize(94.dp,64.dp).background(Color.Black)) {
-                    ZenlessBackButton({},"Back",Modifier.offset(2.dp,2.dp))
+                    ZenlessBackButton({},"Back",Modifier.offset(2.dp,2.dp).size(90.dp,60.dp))
                 }
             }
         }

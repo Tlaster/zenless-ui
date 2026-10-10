@@ -8,8 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -118,7 +116,7 @@ public fun ZenlessButton(
                     }
                 }
             }
-            if (loading) ZenlessSpinner(Modifier.matchParentSize())
+            if (loading) ZenlessSpinner(Modifier.matchParentSize(), size)
         }
     }
 }
@@ -137,28 +135,29 @@ public fun ZenlessIconButton(onClick: () -> Unit, contentDescription: String, mo
 
 /** Uses the shared release flash before invoking navigation. */
 @Composable
-public fun ZenlessBackButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    NavigationButton(onClick, contentDescription, modifier, enabled, back = true)
+public fun ZenlessBackButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true, size: ZenlessSize = LocalControlSize.current) {
+    NavigationButton(onClick, contentDescription, modifier, enabled, back = true, controlSize = size)
 }
 @Composable
-public fun ZenlessCloseButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    NavigationButton(onClick, contentDescription, modifier, enabled, back = false)
+public fun ZenlessCloseButton(onClick: () -> Unit, contentDescription: String, modifier: Modifier = Modifier, enabled: Boolean = true, size: ZenlessSize = LocalControlSize.current) {
+    NavigationButton(onClick, contentDescription, modifier, enabled, back = false, controlSize = size)
 }
 
 @Composable
-private fun NavigationButton(onClick: () -> Unit, description: String, modifier: Modifier, enabled: Boolean, back: Boolean) {
+private fun NavigationButton(onClick: () -> Unit, description: String, modifier: Modifier, enabled: Boolean, back: Boolean, controlSize: ZenlessSize) {
     val scope = rememberCoroutineScope()
     val currentClick by rememberUpdatedState(onClick)
     val currentEnabled by rememberUpdatedState(enabled)
     var pending by remember { mutableStateOf(false) }
     val source = remember { MutableInteractionSource() }
     val feedback = rememberFeedback(source, false, enabled, buttonFeedback = true)
-    Box(modifier.size(90.dp, 60.dp).semantics { contentDescription = description }.drawWithCache {
+    Box(modifier.size((controlSize.height * 1.5f).dp, controlSize.height.dp).semantics { contentDescription = description }.drawWithCache {
+        val unit = size.height / 60f
         val rect = Rect(Offset.Zero, size)
         val path = headerPath(rect, back)
         val inner = if(back)backPlatePath(rect,face=true) else navigationPlatePath(rect,closeFace)
         val ring = if(back)null else navigationPlatePath(rect,closeRing)
-        val glint = headerPath(rect,back,-1.dp.toPx())
+        val glint = headerPath(rect,back,-unit)
         onDrawBehind {
             val color = Color(0xffc50600)
             drawPath(path, color)
@@ -177,7 +176,7 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
                     drawPath(inner,Brush.linearGradient(
                         listOf(Color(0xfffe2002),Color.Transparent),
                         start=Offset(size.width*1.55f/90,size.height*9.73f/60),
-                        end=Offset(size.width*3.71f/90,size.height*23.25f/60)),style=Stroke(3.dp.toPx()))
+                        end=Offset(size.width*3.71f/90,size.height*23.25f/60)),style=Stroke(3*unit))
                 }
             }
             val bevel=if(back)Brush.linearGradient(
@@ -186,17 +185,20 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
                 listOf(Color(0xfffe1c01),color),
                 start=Offset(size.width*8.29f/90,size.height*19.60f/60),
                 end=Offset(size.width*14.58f/90,size.height*34.48f/60))
-            drawPath(glint,bevel,style=Stroke((if(back)1.3f else 1.6f).dp.toPx()))
+            drawPath(glint,bevel,style=Stroke((if(back)1.3f else 1.6f)*unit))
             if (feedback.highlight > 0f) {
                 val outset = if (feedback.release < 0) size.minDimension * .15f * Motion.pulse(feedback.seconds) else 0f
-                drawPath(headerPath(rect.inflate(2.dp.toPx()), back, outset), mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
+                drawPath(headerPath(rect.inflate(2*unit), back, outset), mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=feedback.highlight))
             }
         }
     }.pointerClick(enabled, source) {
         if (!pending) { pending = true; scope.launch { delay(150); pending = false; if (currentEnabled) currentClick() } }
     }) {
         // Soften only the close mark's captured edges, preserving the plate's checker detail.
-        Canvas(Modifier.fillMaxSize().then(if(back)Modifier else Modifier.blur(.35.dp,BlurredEdgeTreatment.Unbounded))) {
+        Canvas(Modifier.fillMaxSize().then(if(back)Modifier else Modifier.graphicsLayer {
+            val radius = size.height / 60f * .35f
+            renderEffect = BlurEffect(radius, radius, TileMode.Decal)
+        })) {
             if (back) {
                 drawPath(backArrowPath(Rect(Offset.Zero,size)),mix(Color(0xffc50600),Color.Black,feedback.highlight))
             } else {
@@ -229,7 +231,7 @@ internal fun Mark(kind: Mark, modifier: Modifier, color: Color = LocalInk.curren
         if(kind==Mark.Down) {
             p.reset();p.moveTo(size.width*.15f,size.height*.32f);p.lineTo(size.width*.85f,size.height*.32f);p.lineTo(size.width*.5f,size.height*.7f);p.close()
             drawPath(p,color)
-        } else drawPath(p, color, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        } else drawPath(p, color, style = Stroke(size.minDimension * 2.5f / 26f, cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }
 
@@ -242,12 +244,12 @@ private val dropdownArrow = Path().apply {
 }
 
 @Composable
-public fun ZenlessSpinner(modifier: Modifier = Modifier) {
+public fun ZenlessSpinner(modifier: Modifier = Modifier, size: ZenlessSize = LocalControlSize.current) {
     var angle by remember { mutableFloatStateOf(0f) }
     val ink = LocalInk.current
     LaunchedEffect(Unit) { val start = withFrameNanos { it }; while (true) withFrameNanos { angle = ((it - start) / 1_000_000_000f * 240) % 360 } }
-    Canvas(modifier.size(24.dp).semantics { progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }) {
-        val diameter = min(size.minDimension, 20.dp.toPx())
-        drawArc(ink, angle, 270f, false, topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2), size = Size(diameter, diameter), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
+    Canvas(modifier.size((24*size.scale).dp).semantics { progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate }) {
+        val diameter = min(this.size.minDimension, (20*size.scale).dp.toPx())
+        drawArc(ink, angle, 270f, false, topLeft = Offset((this.size.width - diameter) / 2, (this.size.height - diameter) / 2), size = Size(diameter, diameter), style = Stroke((2*size.scale).dp.toPx(), cap = StrokeCap.Round))
     }
 }

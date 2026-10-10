@@ -208,14 +208,14 @@ class PressedInkTest {
             button.performTouchInput { down(center) };mainClock.advanceTimeBy(800)
             assertEquals(Color.Black,button.ink(),"$label held text")
             val pixels=button.captureToImage().toPixelMap()
-            val first=if(label=="Apply")pixels[25,33] else pixels[27,28]
+            val first=if(label=="Apply")pixels[24,32] else pixels[26,26]
             assertEquals(pixels[pixels.width-14,pixels.height/2],first,"$label leading glyph matches the plate")
-            assertEquals(Color.Black,pixels[27,40],"$label leading glyph has a black disc")
+            assertEquals(Color.Black,pixels[26,38],"$label leading glyph has a black disc")
             button.save("held-alert-$label")
             onRoot().save("held-alert-$label-context")
             mainClock.advanceTimeBy(320)
             val later=button.captureToImage().toPixelMap()
-            val next=if(label=="Apply")later[25,33] else later[27,28]
+            val next=if(label=="Apply")later[24,32] else later[26,26]
             assertTrue(first!=next,"$label leading glyph keeps breathing")
             assertEquals(later[later.width-14,later.height/2],next,"$label glyph stays in phase")
             button.performTouchInput { moveTo(Offset(-1000f,-1000f));up() };mainClock.advanceTimeBy(240)
