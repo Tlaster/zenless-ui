@@ -160,7 +160,8 @@ class RadioButtonTest {
     }
 
     @Test fun presetsRtlAndLargeTextKeepExistingSizing() {
-        for (density in listOf(1f, 2f)) runDesktopComposeUiTest(width = 660, height = 900) {
+        // Keep 900 dp of height so platform font metrics cannot squeeze the last control.
+        for (density in listOf(1f, 2f)) runDesktopComposeUiTest(width = 660, height = (900 * density).toInt()) {
             var preset by mutableStateOf(ZenlessSize.Default)
             var rtl by mutableStateOf(false)
             setContent { CompositionLocalProvider(LocalDensity provides Density(density, 1.5f),
