@@ -13,6 +13,9 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -151,16 +154,18 @@ public fun ZenlessSelect(
             }
         }
     }) { above ->
-        val scroll=rememberScrollState()
-        LaunchedEffect(size,selectedIndex) { scroll.scrollTo(with(density){(selectedIndex*(optionHeight+4)).dp.roundToPx()}) }
+        val scroll=rememberLazyListState(initialFirstVisibleItemIndex=selectedIndex)
+        LaunchedEffect(expanded,size,selectedIndex,options.size) {
+            if(expanded && (scroll.firstVisibleItemIndex!=selectedIndex || scroll.firstVisibleItemScrollOffset!=0))scroll.scrollToItem(selectedIndex)
+        }
         Column(Modifier.width(with(density){width.toDp()}).heightIn(max=menuHeight+24.dp).graphicsLayer { alpha=opacity.value;translationY=(if(above)32 else -32).dp.toPx()*(1-progress.value) },horizontalAlignment=Alignment.CenterHorizontally) {
-            Column(Modifier.weight(1f,fill=false).fillMaxWidth().heightIn(max=menuHeight).background(Color(0xff262626),RoundedCornerShape((optionHeight/2+4).dp)).border(2.dp,Color(0xff141414),RoundedCornerShape((optionHeight/2+4).dp)).padding(4.dp).clip(RoundedCornerShape((optionHeight/2).dp)).verticalScroll(scroll),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                options.forEachIndexed { index,text ->
+            LazyColumn(Modifier.weight(1f,fill=false).fillMaxWidth().heightIn(max=menuHeight).background(Color(0xff262626),RoundedCornerShape((optionHeight/2+4).dp)).border(2.dp,Color(0xff141414),RoundedCornerShape((optionHeight/2+4).dp)).padding(4.dp).clip(RoundedCornerShape((optionHeight/2).dp)),state=scroll,verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                itemsIndexed(options) { index,text ->
                     val optionSource=remember { MutableInteractionSource() }
                     val optionFeedback=rememberFeedback(optionSource,index==selectedIndex,true)
                     Box(Modifier.fillMaxWidth().heightIn(min=optionHeight.dp).drawWithCache { onDrawBehind {
                         if(optionFeedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(optionFeedback.seconds)).copy(alpha=optionFeedback.highlight),cornerRadius=CornerRadius(this.size.height/2))
-                    }}.semantics { selected=index==selectedIndex }.pointerClick(expanded,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp),contentAlignment=Alignment.Center) {
+                    }}.semantics { selected=index==selectedIndex }.pointerClick(expanded && enabled,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp),contentAlignment=Alignment.Center) {
                         CompositionLocalProvider(LocalInk provides mix(if(index==selectedIndex)Color.Black else Color.White,Color.Black,optionFeedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(text,maxLines=1) }
                     }
                 }

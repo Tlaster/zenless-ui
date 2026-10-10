@@ -142,7 +142,7 @@ class VisualTest {
             assertEquals(Color(0xff262626),on[x,y],"The circular and outer borders form one solid join at $x,$y")
             assertEquals(on[x,y],off[x,y],"Disabled junctions use the same silhouette")
         }
-        for((x,value) in listOf(114 to 38,115 to 33,116 to 13))assertTrue(kotlin.math.abs(on[x,58].red*255-value)<=1,"Soft inner-ring edge at $x")
+        for((x,value) in listOf(114 to 38,115 to 38,116 to 5))assertTrue(kotlin.math.abs(on[x,58].red*255-value)<=1,"Native-antialiased inner-ring edge at $x")
         for((y,left,right) in listOf(Triple(11,24,462),Triple(21,13,472),Triple(41,3,483),Triple(58,1,486),Triple(91,11,475),Triple(111,35,452))) {
             val edge=(0 until on.width).filter { on[it,y].red>15/255f }
             assertTrue(kotlin.math.abs(edge.first()-left)<=1 && kotlin.math.abs(edge.last()-right)<=1,"Reference shell contour at row $y")

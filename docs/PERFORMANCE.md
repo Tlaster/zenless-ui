@@ -10,6 +10,8 @@ $env:ZENLESS_BENCHMARK_RUN = 'local'
 
 Results and scene screenshots are written to `verification/performance/local/`. Ordinary CI runs skip this benchmark; machine-specific timing is not a pass/fail threshold.
 
+The [implemented button-cache and lazy-select optimization](benchmarks/button-select-optimization.md) includes a fresh before/after comparison. Earlier measurements below are retained as historical baselines.
+
 ## Method
 
 - `ImageComposeScene` renders into a Skia CPU raster surface, including Compose frame-clock processing, recomposition, measurement, drawing and an immediately closed image snapshot. This is **not GPU presentation time or observed display FPS**.
@@ -58,3 +60,7 @@ Source locations: [button cache](../zenless-ui/src/commonMain/kotlin/moe/tlaster
 Raw frames, environment metadata and screenshots remain under ignored `verification/performance/`. `baseline-b70bc02` supplies the ordinary scenes; `focused-b70bc02` replaces the resize, switch and select cases after tightening their measurement method (keep every resized button in the viewport, mutate switch state only at transitions, and include deferred popup creation in the opening window). Those superseded samples are excluded from the CSV. `profile-resize-b70bc02/profile.jfr` is a separate diagnostic run and is excluded from all reported timing percentiles. `focused-b70bc02/process-memory.csv` records the process-memory samples; the OS peak counter also covers periods before sampling began.
 
 This task added measurement code and documentation only. No production UI behavior was changed. Actual GPU presentation, browser/Wasm performance, Android/iOS devices, macOS/Linux hosts, energy use and long-duration leak behavior remain unmeasured. Full platform builds were not needed for this local benchmark.
+
+## Direct-vector button experiment
+
+[The initial test-only vector prototype](benchmarks/button-vector-prototype.md) compares three uncached alternatives with the original renderer. It reduced construction/resize work but introduced pixel differences and a software redraw regression. The subsequent implementation retains the accepted direct-vector appearance while adding a native-resolution cache. The prototype's shell-only timing numbers must not be compared directly with full-control measurements.
