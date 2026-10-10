@@ -67,7 +67,7 @@ internal fun rememberFeedback(source: MutableInteractionSource, selected: Boolea
         val changed=interaction!==processedInteraction
         processedInteraction=interaction
         if (!enabled || !focused || !state.visible) { state.active = false; state.release = -1f; state.seconds = 0f; return@LaunchedEffect }
-        if (changed && interaction is PressInteraction.Release) {
+        if (changed && interaction is PressInteraction.Release && !selected) {
             val start = withFrameNanos { it }
             do { state.release = withFrameNanos { (it - start) / 1_000_000_000f } } while (state.release < .15f)
         }

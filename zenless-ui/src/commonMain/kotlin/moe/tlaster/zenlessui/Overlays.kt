@@ -35,6 +35,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.delay
@@ -120,11 +121,14 @@ public fun ZenlessSelect(
     val progress = remember { Animatable(0f) }
     val density = LocalDensity.current
     val source = remember { MutableInteractionSource() }
-    val feedback = rememberFeedback(source, false, enabled, ambient = expanded)
+    val focused = LocalWindowInfo.current.isWindowFocused
+    val showMenu = enabled && focused && (expanded || progress.value>0f)
+    val feedback = rememberFeedback(source, showMenu, enabled && focused, buttonFeedback = true)
+    val resting = remember { Feedback() }
     val overlayContext=LocalOverlays.current
-    LaunchedEffect(expanded, enabled) {
-        if (!enabled) expanded = false
-        progress.animateTo(if (expanded && enabled) 1f else 0f, tween(if (expanded) 200 else 100, easing = if (expanded) EaseOutCubic else EaseInCubic))
+    LaunchedEffect(expanded, enabled, focused) {
+        if (!enabled || !focused) { expanded=false; progress.snapTo(0f); return@LaunchedEffect }
+        progress.animateTo(if (expanded) 1f else 0f, tween(if (expanded) 200 else 100, easing = if (expanded) EaseOutCubic else EaseInCubic))
     }
     val opacity=remember { Animatable(0f) }
     LaunchedEffect(expanded) { opacity.animateTo(if(expanded)1f else 0f,tween(if(expanded)60 else 100,easing=if(expanded)EaseOutCubic else EaseInCubic)) }
@@ -133,9 +137,9 @@ public fun ZenlessSelect(
     FieldLayout(label,modifier,size) {
         Row(Modifier.fillMaxWidth().heightIn(min=size.height.dp).onGloballyPositioned { width=it.size.width; anchor=it.boundsInWindow().roundToIntRect() }
             .semantics { if(label.isNotEmpty())contentDescription=label;stateDescription=options[selectedIndex] }
-            .plate(feedback,fill=if(enabled)Color.Black else Color(0xff080808),edge=if(enabled)Color(0xff323232) else Color(0xff191919),enabled=enabled,input=true)
-            .pointerClick(enabled,source) { expanded=!expanded }.padding(start=size.horizontalPadding.dp),verticalAlignment=Alignment.CenterVertically) {
-            CompositionLocalProvider(LocalInk provides mix(if(enabled)Color.White else Color(0xff737373),Color.Black,feedback.highlight)) {
+            .plate(resting,fill=if(enabled)Color.Black else Color(0xff080808),edge=if(enabled)Color(0xff323232) else Color(0xff191919),enabled=enabled,input=true)
+            .buttonClick(enabled,source) { if(focused) expanded=!expanded }.padding(start=size.horizontalPadding.dp),verticalAlignment=Alignment.CenterVertically) {
+            CompositionLocalProvider(LocalInk provides if(enabled)Color.White else Color(0xff737373)) {
                 ZenlessText(options[selectedIndex],Modifier.weight(1f),maxLines=1)
                 Box(Modifier.size(size.height.dp),contentAlignment=Alignment.Center) {
                     Mark(Mark.Dropdown,Modifier.size((16f*size.height/62).dp,(13f*size.height/62).dp),if(enabled)LocalInk.current else Color(0xff787879))
@@ -143,17 +147,19 @@ public fun ZenlessSelect(
             }
         }
     }
-    if(expanded || progress.value>0f) AnchoredOverlay(anchor,with(density){4.dp.roundToPx()},true,{expanded=false},decoration={
+    if(showMenu || feedback.active || feedback.release>=0f) AnchoredOverlay(anchor,with(density){4.dp.roundToPx()},showMenu,{expanded=false},decoration={
         Canvas(Modifier.offset { val origin=overlayContext?.bounds?.topLeft ?: IntOffset.Zero; IntOffset(anchor.left-origin.x,anchor.top-origin.y) }.size(with(density){anchor.width.toDp()},with(density){anchor.height.toDp()})) {
             val rim=2+6*Motion.pulse(feedback.seconds)
+            val amount=if(enabled && focused)feedback.highlight*(if(!expanded && showMenu)opacity.value else 1f) else 0f
             for(i in 0..6) {
                 val width=if(i==0)2f else 1f
                 val outset=(if(i==0)1f else i+1.5f).dp.toPx()
-                val alpha=if(i==0)1f else (rim-i-1).coerceIn(0f,1f)
+                val alpha=(if(i==0)1f else (rim-i-1).coerceIn(0f,1f))*amount
                 drawPath(roundedPath(Rect(Offset.Zero,this.size).inflate(outset),this.size.minDimension/2+outset),mix(Color.Yellow,Color(0xff80c800),Motion.color(feedback.seconds)).copy(alpha=alpha),style=Stroke(width.dp.toPx()))
             }
         }
     }) { above ->
+        if(!showMenu)return@AnchoredOverlay
         val scroll=rememberLazyListState(initialFirstVisibleItemIndex=selectedIndex)
         LaunchedEffect(expanded,size,selectedIndex,options.size) {
             if(expanded && (scroll.firstVisibleItemIndex!=selectedIndex || scroll.firstVisibleItemScrollOffset!=0))scroll.scrollToItem(selectedIndex)
@@ -165,7 +171,7 @@ public fun ZenlessSelect(
                     val optionFeedback=rememberFeedback(optionSource,index==selectedIndex,true)
                     Box(Modifier.fillMaxWidth().heightIn(min=optionHeight.dp).drawWithCache { onDrawBehind {
                         if(optionFeedback.highlight>0f)drawRoundRect(mix(Palette.signal,Color(0xff91bc00),Motion.signalColor(optionFeedback.seconds)).copy(alpha=optionFeedback.highlight),cornerRadius=CornerRadius(this.size.height/2))
-                    }}.semantics { selected=index==selectedIndex }.pointerClick(expanded && enabled,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp),contentAlignment=Alignment.Center) {
+                    }}.semantics { selected=index==selectedIndex }.pointerClick(expanded && enabled && focused,optionSource) { expanded=false;if(index!=selectedIndex)onSelected(index) }.padding(horizontal=size.horizontalPadding.dp),contentAlignment=Alignment.Center) {
                         CompositionLocalProvider(LocalInk provides mix(if(index==selectedIndex)Color.Black else Color.White,Color.Black,optionFeedback.highlight),LocalTextStyle provides LocalTextStyle.current.copy(fontSize=size.fontSize.sp)) { ZenlessText(text,maxLines=1) }
                     }
                 }

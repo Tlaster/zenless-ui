@@ -93,6 +93,8 @@ All general button variants and standalone icon buttons share the gray shell and
 
 Action buttons track the first touch or left mouse press that starts inside them. Moving outside, returning or scrolling keeps their held animation; releasing anywhere plays the 150 ms tail without turning a cancelled click into activation. Extra fingers do not extend the hold, and a new press interrupts the previous tail. Focus loss, disabling/loading, removal or system cancellation clears feedback without a tail and requires a new press. Callback timing is unchanged.
 
+Select triggers use the same hold tracking on their breathing outer rim, with unchanged plate, text and arrow colors. A valid release opens the menu and continues the breathing phase without a flash. An outside release, scroll or consumed tooltip long press leaves the menu closed and plays the 150 ms rim flash. Open menus keep breathing; selecting an option or dismissing outside fades the rim with the existing 100 ms close. Window focus loss or disabling immediately closes the menu and clears feedback; restoring focus does not reopen it.
+
 ## Build
 
 Toolchain: Compose Multiplatform 1.12.1, Kotlin 2.4.10, AGP 9.4.1, Gradle 9.8.0, JDK 25. Android compilation uses SDK 37.0. Set `ANDROID_HOME` or an untracked `local.properties` with `sdk.dir`. Use the checked-in wrapper (`gradlew.bat` on Windows).
