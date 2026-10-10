@@ -14,6 +14,8 @@ import java.io.File
 import java.util.Locale
 import org.junit.Before
 import org.junit.After
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GalleryTest {
     @get:Rule val compose = createComposeRule()
@@ -43,6 +45,40 @@ class GalleryTest {
         compose.mainClock.advanceTimeBy(200)
         compose.onNodeWithText("全选").assertIsNotEnabled()
         compose.onNodeWithText("enabled = false", substring = true).assertExists()
+    }
+
+    @Test fun dialogShowsCallerActionsCustomBackgroundAndMatchingCode() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent { Box(Modifier.requiredSize(1024.dp, 768.dp)) { GalleryApp() } }
+        compose.onAllNodesWithText("对话框与动态背景")[0].performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("自定义背景插槽").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("background = {", substring = true).assertExists()
+        compose.onNodeWithTag("open-dialog").performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("修改用户名").assertIsDisplayed()
+        compose.onNodeWithText("公开生日信息").assertIsDisplayed()
+        val first = compose.onNodeWithText("修改用户名").fetchSemanticsNode().boundsInRoot
+        val second = compose.onNodeWithText("公开生日信息").fetchSemanticsNode().boundsInRoot
+        assertEquals(first.top, second.top)
+        assertTrue(second.left > first.right)
+        capture("gallery-dialog-open")
+        compose.onNodeWithContentDescription("关闭对话框").performClick()
+        compose.mainClock.advanceTimeBy(250)
+        compose.onNodeWithTag("gallery-dialog").assertDoesNotExist()
+        compose.onNodeWithText("窄窗口").performClick()
+        compose.onNodeWithText("可滚动长内容").performClick()
+        compose.mainClock.advanceTimeBy(64)
+        compose.onNodeWithText("modifier = Modifier.width(400.dp)", substring = true).assertExists()
+        compose.onNodeWithTag("open-dialog").performClick()
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithTag("gallery-dialog").assertWidthIsEqualTo(400.dp)
+        compose.onNodeWithText("社交设置").assertExists()
+        val narrowFirst = compose.onNodeWithText("修改用户名").fetchSemanticsNode().boundsInRoot
+        val narrowSecond = compose.onNodeWithText("公开生日信息").fetchSemanticsNode().boundsInRoot
+        assertTrue(narrowSecond.top > narrowFirst.bottom)
+        capture("gallery-dialog-narrow")
     }
 
     @Test fun pillsSelectAndUpdateParametersAndCopyableCode() {

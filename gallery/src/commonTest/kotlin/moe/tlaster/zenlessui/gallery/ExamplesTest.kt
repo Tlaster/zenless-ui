@@ -4,6 +4,15 @@ import kotlin.test.*
 import moe.tlaster.zenlessui.*
 
 class ExamplesTest {
+    @Test fun dialogExampleKeepsBackgroundLayoutAndScrollContentInSync() {
+        val code = dialogExample("Title", "Close", listOf("Action"), "A \"tile\"", true, true, true)
+        listOf("ZenlessOverlayHost {", "Modifier.width(400.dp)", "background = {", "ZenlessAnimatedBackground(Modifier.fillMaxSize())",
+            "BasicText(\"A \\\"tile\\\"\"", "repeat(20)", "maxWidth < 500.dp").forEach { assertTrue(it in code, it) }
+        assertTrue(code.startsWith("ZenlessOverlayHost {\n    var visible"))
+        val plain = dialogExample("T", "C", listOf("A"), "026", false, false, false)
+        assertFalse("background =" in plain)
+        assertFalse("repeat(20)" in plain)
+    }
     @Test fun pillExampleKeepsSelectionEnabledWidthAndTextInSync() {
         val code = pillExample("A \"pill\"", true, false, true)
         listOf("mutableStateOf(true)", "enabled = false", "Modifier.fillMaxWidth()", "selected = !selected", "ZenlessText(\"A \\\"pill\\\"\")")

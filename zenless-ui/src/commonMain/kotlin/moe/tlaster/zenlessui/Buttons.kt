@@ -144,7 +144,7 @@ public fun ZenlessCloseButton(onClick: () -> Unit, contentDescription: String, m
 }
 
 @Composable
-private fun NavigationButton(onClick: () -> Unit, description: String, modifier: Modifier, enabled: Boolean, back: Boolean, controlSize: ZenlessSize) {
+internal fun NavigationButton(onClick: () -> Unit, description: String, modifier: Modifier, enabled: Boolean, back: Boolean, controlSize: ZenlessSize, clickDelayMillis: Long = 150) {
     val scope = rememberCoroutineScope()
     val currentClick by rememberUpdatedState(onClick)
     val currentEnabled by rememberUpdatedState(enabled)
@@ -192,7 +192,7 @@ private fun NavigationButton(onClick: () -> Unit, description: String, modifier:
             }
         }
     }.buttonClick(enabled, source) {
-        if (!pending) { pending = true; scope.launch { delay(150); pending = false; if (currentEnabled) currentClick() } }
+        if (!pending) { pending = true; scope.launch { delay(clickDelayMillis); pending = false; if (currentEnabled) currentClick() } }
     }) {
         // Soften only the close mark's captured edges, preserving the plate's checker detail.
         Canvas(Modifier.fillMaxSize().then(if(back)Modifier else Modifier.graphicsLayer {

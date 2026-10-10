@@ -64,6 +64,16 @@ The external selected state, native press and input focus are combined into one 
 
 Optional `onClick` supplies one whole-container action; null leaves display-only content. External selection, native press and keyboard focus share `Motion.signalColor`'s two-second cycle. Handoffs preserve the running phase. Release/cancellation returns to selected/focused state, never toggles selection automatically, and has no flash. Hover does not highlight. Disabling suppresses activation and breathing without fading the shell or caller content. The highlight extends 3 dp outside the Default shell (proportional to preset); it does not affect measurement. A clipping parent must reserve this space. Content clipping is inside the highlight drawing layer.
 
+## Dialog and animated background
+
+`ZenlessDialog` uses the existing `ZenlessOverlayHost`. The first version has one active modal: no stack, nested dialogs or modal manager. It owns a three-rounded-corner shell with a square top-end corner, fixed textured header, one-line ellipsized title, close button, body background slot, translucent inner plate and scrolling `ColumnScope` content. Business buttons and responsive column changes belong to content. A default-width window is 762 dp; caller constraints and the safe viewport limit it, with 16 dp margins and IME insets. Default header height is 113 dp. Header geometry and insets follow the existing size preset; width remains caller-owned. Font families stay unchanged. Body scrolling resets on reopen.
+
+Entry moves 120 dp from the right to the center over 180 ms with cubic ease-out; opacity reaches 1 in 100 ms. Exit moves 120 dp left over 180 ms with cubic ease-in, fading over 80 ms after an 80 ms delay. No window scale animation is used. The backdrop uses the existing 0.58 black scrim, diagonal stripe treatment and live blur up to 4.5 dp, with 160 ms entry and a delayed 100 ms exit. Body artwork appears after a 60 ms delay and reaches full opacity over 140 ms. These timelines approximate the supplied variable-frame-rate recording rather than claiming frame-exact recovery. Changing `visible` during exit reverses from the current values. Keep the composable mounted until exit finishes. The built-in close control starts its existing release feedback concurrently with exit; standalone back/close controls retain their 150 ms callback delay.
+
+Close, Escape and Android Back request dismissal once after exit. Programmatic `visible = false` exits without a user-dismiss callback. Outside input is blocked without dismissal, including during exit. The modal receives focus, prevents focus traversal to the backing page and restores the saved focused child on removal when possible. Background semantics are hidden by the host. Default and custom body decorations are excluded from input, focus and accessibility. Normal content controls retain their native editing/IME behavior. Multilayer focus arbitration remains outside this single-layer contract.
+
+`ZenlessAnimatedBackground` can be used without a Dialog. Its single composable content slot represents one repeatable tile, measured under finite viewport constraints. It is composed once and recorded in a graphics layer, then clipped and repeated in staggered rows with a fixed -15 degree tilt, 22 dp/s leftward and 8 dp/s downward movement in tile coordinates, and 0.065 opacity. It owns a dark base and cached oval-dot texture. Content supplies text/numbers/images/drawing and any internal padding; a 48 dp minimum repeat pitch bounds work for tiny tiles. Zero-size content draws only the static base and dots. The decorative tile fixes fontScale at 1; the Dialog title and body retain system scaling. Changes to content or viewport do not restart the clock. Offscreen decoration pauses, removal cancels its clock, and Dialog reopening creates a fresh instance. Arbitrary custom artwork, its exact period and its phase relative to the game are not reference-pixel targets.
+
 ## Gallery
 
 Chinese and English follow the system language initially and can be toggled. Wide windows use a category sidebar; narrow windows show categories and detail separately. Examples use public library APIs. Parameter changes update the matching code snippets. Example state is ephemeral and resets when leaving a category. Code copying operates on the visible example.
@@ -138,3 +148,30 @@ python tools/compare_button_border.py
 ```
 
 Pillow and NumPy are required. Captures, comparison sheets, raw/masked differences, masks and metrics stay under ignored `verification/button-border/`. An optional `before.png` records the pre-change render at identical dimensions; comparison otherwise evaluates only the current output. Independent tests lock reference upper-bevel samples, neutral rim colors, width scaling and black-surround coverage for leading and ordinary buttons at densities 1 and 2. Existing cache, sizing, disabled-state, pressed-ink and interaction checks also apply. The historical vector prototype's direct modes use the current bevel for cache-equivalence checks; its published benchmark numbers describe the earlier appearance.
+
+## Dialog calibration
+
+The baseline is the original 3840 by 2160 `绝区零 2026_10_10 16_54_57.png`, compared with a Windows Desktop fixture at density 2, font scale 1 and Default size. The centered five-button example measures 762 by 482 dp. The fixed context crop is (1150, 590) through (2690, 1580), without resizing. The two supplied videos inform entry/exit order and continuous background movement; their artwork and exact loop period are deliberately not reproduced.
+
+There is no aggregate acceptance score. Current mean absolute RGB errors on fixed masks (0–255 per channel) are:
+
+| Region | MAE | Local regression limit |
+| --- | ---: | ---: |
+| Header gradient and dots, excluding title/close | 0.6925 | 1.1 |
+| Opaque straight black frame segments | 0.0000 | 0.1 |
+| Close control, including cross and texture | 3.4320 | 4.2 |
+| Example button 1 | 1.1899 | 1.6 |
+| Example button 2 | 1.2511 | 1.6 |
+| Example button 3 | 1.1898 | 1.6 |
+| Example button 4 | 1.2511 | 1.6 |
+| Example button 5 | 1.1897 | 1.6 |
+
+The close control's red-mask intersection-over-union is 97.5019% (minimum 97% for regression). System-font glyph shapes, weight and slant are an agreed exception and are masked out. Custom animated artwork is a separate behavioral/visual check, not scored against the game's graphic. Exterior backing, antialiased frame edges and the translucent inner plate cover different images, so their pixels are not included in the fixed-color scores. Zero error on the opaque straight black segments does **not** mean the entire shell is pixel-identical. Remaining close-control differences concentrate on edge softness and checker phase. Raw full-crop differences, overlays and every regional mask are retained for inspection; no reference pixels are rendered in production.
+
+```powershell
+python tools/compare_dialog.py --prepare "path/to/绝区零 2026_10_10 16_54_57.png"
+.\gradlew.bat :zenless-ui:desktopTest --tests '*DialogTest'
+python tools/compare_dialog.py
+```
+
+Pillow and NumPy are required. Local reference/diagnostics remain under ignored `verification/dialog/`. The script checks each region independently after writing its diagnostics. `DialogTest` runs without the source capture: it covers delayed single dismissal, outside-input blocking, Escape, focus restoration/trapping, narrow large-text scrolling with a fixed header, reset on reopen, interrupted exit reversal, native fixture dimensions, one tile composition, changing tile dimensions, semantic/input exclusion, tiny-tile bounds and empty-tile stability. Gallery tests check custom background selection, live code, wide two-column and narrow one-column content. Desktop interaction/visual regressions and common Web compilation were also run. Android Back/IME, iOS safe areas, browser playback and real-device motion remain platform acceptance work; neither these static scores nor a successful compile substitutes for that review.

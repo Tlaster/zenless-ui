@@ -12,7 +12,7 @@ Version **0.1.0**. Maven Central publication is configured; the first upload req
 - Horizontal tabs, redrawn folder tabs, vertical navigation
 - Text field, select, slider, tri-state checkbox, radio button, switch
 - Card, feed card, pill container, badge, progress, metric, information row, notice, collapse
-- Alert, drawer, tooltip, overlay host with live background blur
+- Dialog, reusable animated background, Alert, drawer, tooltip, overlay host with live background blur
 
 The gallery provides categories, live examples, editable parameters and copyable Kotlin. State is owned by callers. There is one fixed palette, no color override API, no light theme, no bundled icon set, fonts or audio. Intrinsic marks are drawn by the components. Business icons are composable content. Custom keyboard navigation, shortcuts and gamepads are outside this version's scope; feed cards support native input focus/activation, and normal text editing and IME remain available.
 
@@ -67,6 +67,26 @@ fun Example() {
 ```
 
 Use one `ZenlessOverlayHost` around the application, including selects and tooltips. Alert and drawer callbacks run after their exit animation. Alerts do not dismiss on outside taps. Drawer outside taps dismiss. Tooltip hover delay is 600 ms; touch uses the platform long-press threshold. Sliding after a long press dismisses the hint and allows parent scrolling; the long press never activates its anchor. Moving its anchor or tapping outside also dismisses it. Tooltips accept text only.
+
+`ZenlessDialog` owns the asymmetric shell, textured fixed header, title, close control, translucent inner plate and content padding. Its `ColumnScope` content slot owns all business controls and responsive layouts. Default width is 762 dp; caller `Modifier` can constrain it, and the window stays within the safe viewport with 16 dp margins. Long content scrolls inside the plate, leaving the title and close control fixed. The title uses one line with ellipsis; reopening resets scroll. Keep the composable mounted while changing `visible` so the exit can finish. Close, Escape and Android Back invoke `onDismissRequest` once after exit; outside taps only block. Focus enters the modal, stays inside it, then returns to the previous control when possible. This version supports one active Dialog, without stacking or nested modals.
+
+```kotlin
+ZenlessDialog(
+    visible = open,
+    title = "More actions",
+    closeDescription = "Close dialog",
+    onDismissRequest = { open = false },
+    background = {
+        ZenlessAnimatedBackground {
+            ZenlessText("026", Modifier.padding(24.dp), style = ZenlessTextStyle.Title)
+        }
+    },
+) {
+    ZenlessButton({ /* caller action */ }) { ZenlessText("Change username") }
+}
+```
+
+The optional `background` slot replaces only the body decoration. `ZenlessAnimatedBackground` is also usable alone with a bounded viewport, for example `Modifier.fillMaxWidth().height(240.dp)`. Its content slot supplies **one repeatable tile**, composed once; the component records and draws it with fixed tilt, low opacity, staggered repetition and continuous diagonal drift. Supply text, numbers, images or custom drawing, including their dimensions and padding. The tile is measured within the viewport; each repeat pitch is at least 48 dp to bound tiny-tile work. Empty/zero-size content leaves the static base and dots. Decorations do not accept input, focus or accessibility traversal. Font scale is fixed at 1 only inside the decorative tile; normal Dialog text retains system scaling. Motion survives recomposition and tile changes, pauses offscreen, and ends on disposal. A reopened Dialog starts a new background instance. The Gallery's **Dialogs & backgrounds** page includes editable pattern text, a custom background, narrow/long content and copyable Kotlin. See [Dialog calibration](docs/SPEC.md#dialog-calibration) for independent region comparisons and font/background exceptions.
 
 Controls share three size presets: `Compact` (40 dp / 14 sp), `Default` (52 dp / 20 sp), and `Comfortable` (62 dp / 24 sp). Set `ZenlessTheme(size = ZenlessSize.Compact) { ... }` for a whole group, or pass `size` to one control. Heights are minimums and grow with wrapped or enlarged text. Buttons, fields, selects, switches, checkboxes, radios, sliders, both tab styles/navigation, information rows, collapse headers and Alert actions use the same presets. Back/close controls use the same height with a 3:2 aspect ratio (60×40 / 78×52 / 93×62 dp). Their contours, glyphs and bevels scale together; folder rails, corners and lift distances follow the preset. Icon slots and padding follow the preset; switch tracks scale proportionally. Spinners, badges, notices, progress bars, metrics, tooltips, card insets, navigation caps and Alert/drawer spacing retain their own proportions while scaling from Default by 40/52 or 62/52. Cards and drawers pass a local size override to their content. Explicit text roles such as Title and Caption remain independent of control size.
 

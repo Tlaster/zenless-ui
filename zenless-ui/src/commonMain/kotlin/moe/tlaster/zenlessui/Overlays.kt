@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -44,6 +46,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlin.math.roundToInt
 
 internal class OverlayContext {
+    val backingFocus = FocusRequester()
     val blurs = mutableStateMapOf<Any, Float>()
     val activeModals = mutableStateMapOf<Any, Boolean>()
     val modals = mutableStateMapOf<Any, @Composable () -> Unit>()
@@ -66,7 +69,7 @@ public fun ZenlessOverlayHost(modifier: Modifier = Modifier, content: @Composabl
                 context.tooltip = null
             }
         }) {
-            Box(Modifier.matchParentSize().graphicsLayer {
+            Box(Modifier.matchParentSize().focusRequester(context.backingFocus).focusGroup().graphicsLayer {
                 val strength = context.blurs.values.maxOrNull() ?: 0f
                 renderEffect = if (strength > 0f) BlurEffect(with(density) { 4.5.dp.toPx() } * strength, with(density) { 4.5.dp.toPx() } * strength, TileMode.Clamp) else null
             }.then(if (context.activeModals.values.any { it }) Modifier.clearAndSetSemantics {} else Modifier)) { content() }

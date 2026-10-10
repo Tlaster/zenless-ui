@@ -31,7 +31,7 @@ internal fun sizedExample(code: String, size: ZenlessSize): String =
 internal enum class Demo(val en: String, val zh: String) {
     Foundations("Foundations", "视觉基础"), Buttons("Buttons", "按钮"), Navigation("Navigation", "导航与页签"),
     Fields("Text fields", "文本输入"), Select("Select & slider", "选择器与滑条"), Selection("Selection controls", "选择控件"),
-    Display("Cards & feedback", "卡片与反馈"), FeedCards("Feed cards", "信息流卡片"), Pills("Pill containers", "胶囊容器"), Overlays("Overlays", "弹层"), Tooltip("Tooltip", "工具提示"), Examples("Settings example", "设置页示例")
+    Display("Cards & feedback", "卡片与反馈"), FeedCards("Feed cards", "信息流卡片"), Pills("Pill containers", "胶囊容器"), Dialogs("Dialogs & backgrounds", "对话框与动态背景"), Overlays("Overlays", "弹层"), Tooltip("Tooltip", "工具提示"), Examples("Settings example", "设置页示例")
 }
 
 /** The gallery uses only public library APIs, including every interactive preview. */
@@ -42,6 +42,7 @@ public fun GalleryApp() {
     var detail by remember { mutableStateOf(false) }
     var alert by remember { mutableStateOf(false) }
     var drawer by remember { mutableStateOf(false) }
+    var dialog by remember { mutableStateOf(false) }
     var events by remember { mutableIntStateOf(0) }
     var lastEvent by remember { mutableStateOf("") }
     var alertMessage by remember { mutableStateOf<String?>(null) }
@@ -52,7 +53,7 @@ public fun GalleryApp() {
     LaunchedEffect(page) { contentScroll.scrollTo(0) }
     val tr: (String, String) -> String = { en, zh -> if (chinese) zh else en }
     val record: (String) -> Unit = { events++; lastEvent = it }
-    GalleryBackHandler(detail && !alert && !drawer) { detail = false }
+    GalleryBackHandler(detail && !alert && !drawer && !dialog) { detail = false }
     CompositionLocalProvider(LocalExampleSize provides size) {
     ZenlessTheme(size = size) {
         ZenlessOverlayHost(Modifier.fillMaxSize()) {
@@ -92,6 +93,7 @@ public fun GalleryApp() {
                                         Demo.Display -> DisplayDemo(tr)
                                         Demo.FeedCards -> FeedCardsDemo(tr, record)
                                         Demo.Pills -> PillsDemo(tr, record)
+                                        Demo.Dialogs -> DialogsDemo(tr, record, dialog, { dialog = it })
                                         Demo.Overlays -> {
                                             Preview(tr("Full-width alert", "通栏 Alert")) {
                                                 ZenlessButton({ alert = true }) { ZenlessText(tr("Open alert", "打开 Alert")) }

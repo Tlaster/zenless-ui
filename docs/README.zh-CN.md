@@ -9,7 +9,11 @@ Compose Multiplatform UI 库，首版 `0.1.0`。提供完整深色主题、固�
 
 支持 Android、Windows x64、Linux x64、macOS Apple Silicon、iOS ARM64 与现代浏览器。Android 最低 API 31，以支持实时背景模糊；不包含 Intel Mac、Windows/Linux ARM64 和旧浏览器。库坐标为 `moe.tlaster.zenlessui:zenless-ui:0.1.0`，首次 Central 发布需要仓库所有者配置命名空间与发布密钥；配置完成不等于已经上架。
 
-组件涵盖按钮、返回/关闭、文件夹页签、导航、输入框、下拉选择、滑条、Checkbox、RadioButton、Switch、卡片、徽章、进度、折叠、Alert、Drawer 和 Tooltip。组件状态由调用方管理。使用弹层和 Tooltip 时，需要在应用根部包裹 `ZenlessOverlayHost`。
+组件涵盖按钮、返回/关闭、文件夹页签、导航、输入框、下拉选择、滑条、Checkbox、RadioButton、Switch、卡片、徽章、进度、折叠、Dialog、独立动态背景、Alert、Drawer 和 Tooltip。组件状态由调用方管理。使用弹层和 Tooltip 时，需要在应用根部包裹 `ZenlessOverlayHost`。
+
+`ZenlessDialog` 管理不对称外框、固定标题区及纹样、关闭按钮、半透明内板和内容留白；业务按钮由 `ColumnScope` 内容插槽提供，单列／双列由调用方布局决定。默认宽度 762 dp，可用 `Modifier` 约束；最大宽高受安全区域及 16 dp 外边距限制。长内容仅在内板中滚动，标题单行省略，关闭按钮固定，重新打开时滚动归零。改变 `visible` 时应保留组件，直到退场结束。关闭按钮、Esc 和 Android 返回键在退场后仅回调一次，外部点击只拦截。打开时接管焦点，关闭后尽可能恢复到原控件。首版只支持单层 Dialog，不做嵌套弹层。
+
+Dialog 的可选 `background` 插槽只替换正文装饰。`ZenlessAnimatedBackground` 可独立复用，传入有边界的视口，如 `Modifier.fillMaxWidth().height(240.dp)`，内容插槽代表**一个可平铺单元**。插槽只组合一次，外部自由提供文字、数字、图片或绘制及其尺寸、留白；组件控制倾斜、低透明度、错行平铺与连续斜向移动。单元在视口最大尺寸内测量，平铺间距至少 48 dp，避免极小内容造成过量绘制；空内容只保留静态底色与点阵。背景不参与点击、焦点和无障碍遍历，装饰文字固定 fontScale=1，Dialog 正文仍遵循系统字体缩放。重组／修改内容不重启动画，离屏暂停，移除后停止，重新打开 Dialog 则重新开始。Gallery「对话框与动态背景」提供可编辑纹样、独立背景、自定义背景、窄窗口、长内容和同步代码。使用方式见[英文示例](../README.md#use)，独立分区验收及字体例外见 [Dialog 校准说明](SPEC.md#dialog-calibration)。
 
 控件共用三档尺寸：`Compact` 为 40 dp／14 sp，`Default` 为 52 dp／20 sp，`Comfortable` 为 62 dp／24 sp。通过 `ZenlessTheme(size = ZenlessSize.Compact) { ... }` 设置整组控件，也可以传入单个组件的 `size`。高度是最小值，换行或放大字体时可以增长。按钮、输入框、下拉框、Switch、Checkbox、RadioButton、Slider、普通页签与导航、信息行和折叠标题共用这些档位；内边距、图标插槽随档位变化，Switch 轨道按比例缩放。返回／关闭、文件夹页签及 Alert 保留独立几何；Alert 操作按钮使用常规字号，最小高度保持 56 dp。
 
