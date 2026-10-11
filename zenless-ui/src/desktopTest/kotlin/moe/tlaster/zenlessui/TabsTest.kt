@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import androidx.compose.ui.unit.Density
@@ -26,6 +27,33 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class TabsTest {
+    @Test fun selectedTabDistinguishesGesturesAndExposesAccessibilityActions() {
+        for (folder in listOf(false, true)) runDesktopComposeUiTest(width = 400, height = 160) {
+            mainClock.autoAdvance = false
+            var selected by mutableIntStateOf(0)
+            var singles = 0
+            var doubles = 0
+            var selections = 0
+            setContent { ZenlessTheme {
+                ZenlessTabs(listOf("Left", "Right"), selected, { selected = it; selections++ }, Modifier.width(360.dp), folder = folder,
+                    onReselected = { singles++ }, onReselectedDoubleClick = { doubles++ }, reselectedDoubleClickLabel = "Refresh")
+            } }
+            fun settle() { mainClock.advanceTimeBy(1_000); waitForIdle() }
+            settle()
+            onNodeWithText("Left").performTouchInput { click() }; settle()
+            runOnIdle { assertEquals(1, singles); assertEquals(0, doubles) }
+            onNodeWithText("Left").performTouchInput { doubleClick() }; settle()
+            runOnIdle { assertEquals(1, singles); assertEquals(1, doubles) }
+            onNodeWithText("Right").performTouchInput { click() }
+            runOnIdle { assertEquals(1, selected); assertEquals(1, selections) }
+            settle()
+            onNodeWithText("Right").performClick(); settle()
+            runOnIdle { assertEquals(2, singles); assertEquals(1, doubles) }
+            val action = onNodeWithText("Right").fetchSemanticsNode().config[SemanticsActions.CustomActions].single()
+            runOnIdle { assertEquals("Refresh", action.label); assertTrue(action.action()); assertEquals(2, doubles) }
+        }
+    }
+
     @Test fun colorOnlyTabsKeepCircularOuterEndsAndSkewedInnerEdges() {
         for(density in listOf(1,2)) runDesktopComposeUiTest(width=680,height=512) {
             mainClock.autoAdvance=false

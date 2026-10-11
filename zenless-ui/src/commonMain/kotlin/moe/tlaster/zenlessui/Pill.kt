@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
  * color-only two-second rim cycle; disabling preserves the shell and stops input/animation.
  * Height is a preset minimum; width follows content or [modifier]. Leave 3 dp at Default
  * (proportional to the preset) outside the shell for its rim. Parent clipping can cut it off.
+ * [contentPadding] overrides the preset's scaled content insets without changing the shell.
  */
 @Composable
 public fun ZenlessPillContainer(
@@ -37,6 +38,7 @@ public fun ZenlessPillContainer(
     selected: Boolean = false,
     enabled: Boolean = true,
     size: ZenlessSize = LocalControlSize.current,
+    contentPadding: PaddingValues = PaddingValues(horizontal = (18 * size.scale).dp, vertical = (6 * size.scale).dp),
     content: @Composable RowScope.() -> Unit,
 ) {
     val source = remember { MutableInteractionSource() }
@@ -84,7 +86,7 @@ public fun ZenlessPillContainer(
             .semantics(mergeDescendants = true) { this.selected = selected }
             .then(if (onClick != null) Modifier.clickable(source, indication = null, enabled = enabled, role = Role.Button, onClick = onClick) else Modifier)
             .clip(shape)
-            .padding(horizontal = (18*scale).dp, vertical = (6*scale).dp),
+            .padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically, content = content)
     }
 }

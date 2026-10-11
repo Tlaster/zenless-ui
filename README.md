@@ -70,6 +70,8 @@ Use one `ZenlessOverlayHost` around the application, including selects and toolt
 
 `ZenlessDialog` owns the asymmetric shell, textured fixed header, title, close control, translucent inner plate and content padding. Its `ColumnScope` content slot owns all business controls and responsive layouts. Default width is 762 dp; caller `Modifier` can constrain it, and the window stays within the safe viewport with 16 dp margins. Long content scrolls inside the plate, leaving the title and close control fixed. The title uses one line with ellipsis; reopening resets scroll. Keep the composable mounted while changing `visible` so the exit can finish. Close, Escape and Android Back invoke `onDismissRequest` once after exit; outside taps only block. Focus enters the modal, stays inside it, then returns to the previous control when possible. This version supports one active Dialog, without stacking or nested modals.
 
+The optional `onExitFinished` callback runs once after a completed exit, whether requested by the user or by setting `visible = false`. Initial hidden state and exits interrupted by reopening do not invoke it. Keep navigation and cleanup in the caller.
+
 ```kotlin
 ZenlessDialog(
     visible = open,
@@ -100,6 +102,8 @@ This replaces the earlier five button-only sizes before the first Central releas
 
 Non-folder `ZenlessTabs` use circular outer ends and slanted interior edges. Selection slides and morphs over 280 ms with a smooth ease-out, keeping its breathing phase through rapid selection changes. Text turns black where the slider covers it. Set `expand = false` for color-only breathing without the scale pulse; selection still moves and morphs. The Gallery's Navigation page exposes this as **Scale pulse**. Folder tabs ignore `expand`.
 
+Optional `onReselected` and `onReselectedDoubleClick` callbacks handle gestures on the selected tab; a double click does not also dispatch the single click. Other tabs still select immediately. Supply `reselectedDoubleClickLabel` to expose the double-click callback as an accessibility action. Callers without these callbacks retain the original behavior.
+
 Buttons use black text and standalone icons while held. A leading icon in a black disc instead follows the plate's yellow-green breathing color, as do Alert action badges. Pass business artwork through `leadingIcon` and read `zenlessContentColor` inside the slot; this is a read-only state color, not a palette override. Regular content slots also expose this color for caller-drawn icons. Use `fillMaxSize()` inside the bounded icon slot to follow the control size. For example (with Compose `Canvas`, `Modifier`, `fillMaxSize`, `padding` and `dp` imports):
 
 ```kotlin
@@ -114,6 +118,8 @@ ZenlessButton(onClick = { /* navigate */ }, leadingIcon = {
 All general button variants and standalone icon buttons share the gray shell and state text colors: white when enabled, `#565657` when disabled, and black while held. Filled buttons with a leading icon keep a dark plate; `tone` selects the fixed color of the leading badge. The disabled badge retains a dim version of its color while the shell and checker texture remain unchanged. Buttons use normal-weight platform-default text without forced italics. Labels with an icon are centered between the leading circle's far edge and the trailing semicircle's center, mirrored in RTL; labels without an icon are centered in the whole button. Alert actions reuse this same `ZenlessButton` with `leadingIcon`.
 
 `ZenlessPillContainer` draws an opaque, shaded capsule around one display-only `RowScope` content slot. Width follows the content or `Modifier`; the three presets supply minimum heights, inherited typography and proportional padding (18 dp horizontal / 6 dp vertical at Default). Taller content grows the shell, while explicit size constraints clip it. Omit `onClick` for a display-only container. Otherwise it has one whole-container action and native keyboard focus/activation; the caller owns `selected`. Press, focus and selection share the existing two-second yellow/green rim cycle without scaling, hover feedback or release flashes. Disabling retains the shell and suppresses input/breathing. Leave 3 dp at Default (proportional to the preset) around the shell for its external rim; it does not change measured size and a clipping parent can hide it. The **Pill containers** Gallery page includes live state/width/content controls, a display-only composition and matching Kotlin. See [pill calibration](docs/SPEC.md#pill-container-calibration) for original-size reference comparisons.
+
+Use `contentPadding: PaddingValues` to override the content insets while preserving the shell. Its default remains the preset-scaled 18 dp horizontal / 6 dp vertical padding.
 
 Action buttons track the first touch or left mouse press that starts inside them. Moving outside, returning or scrolling keeps their held animation; releasing anywhere plays the 150 ms tail without turning a cancelled click into activation. Extra fingers do not extend the hold, and a new press interrupts the previous tail. Focus loss, disabling/loading, removal or system cancellation clears feedback without a tail and requires a new press. Callback timing is unchanged.
 

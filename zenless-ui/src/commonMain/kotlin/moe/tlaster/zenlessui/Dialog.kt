@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 /** A single-layer modal with a fixed header and a vertically scrolling content slot.
  * Keep this composable mounted when visible becomes false so its exit can finish.
  * User dismissal invokes onDismissRequest once, after exit; outside taps only block input.
+ * [onExitFinished] follows either user dismissal or external hiding; interrupted exits do not invoke it.
  * Modifier constrains the window. Background replaces the entire body decoration.
  */
 @Composable
@@ -38,6 +39,7 @@ public fun ZenlessDialog(
     modifier: Modifier = Modifier,
     size: ZenlessSize = LocalControlSize.current,
     background: @Composable () -> Unit = { DialogBackground() },
+    onExitFinished: () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val context = checkNotNull(LocalOverlays.current) { "ZenlessDialog requires ZenlessOverlayHost" }
@@ -49,6 +51,7 @@ public fun ZenlessDialog(
     var closing by remember { mutableStateOf(false) }
     var retained by remember { mutableStateOf(false) }
     val dismiss by rememberUpdatedState(onDismissRequest)
+    val exitFinished by rememberUpdatedState(onExitFinished)
     LaunchedEffect(visible) { if (visible) closing = false }
     LaunchedEffect(visible, closing) {
         if (visible && !closing) {
@@ -67,6 +70,7 @@ public fun ZenlessDialog(
                 artwork.animateTo(0f, tween(120))
             }
             retained = false
+            exitFinished()
             if (visible && closing) dismiss()
         }
     }

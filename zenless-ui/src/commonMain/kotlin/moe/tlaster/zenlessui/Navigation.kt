@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
@@ -22,9 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 
-/** Non-folder tabs have circular outer ends; [expand] = false keeps only their color pulse. Ignored by folder tabs. */
+/** Non-folder tabs have circular outer ends; [expand] = false keeps only their color pulse. Ignored by folder tabs.
+ * Optional reselection callbacks handle the current tab without selecting it again; double clicks do not also single-click.
+ * Supply [reselectedDoubleClickLabel] to expose the double-click callback as an accessibility action.
+ */
 @Composable
-public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier, folder: Boolean = false, expand: Boolean = true, size: ZenlessSize = LocalControlSize.current) {
+public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier, folder: Boolean = false, expand: Boolean = true, size: ZenlessSize = LocalControlSize.current,
+    onReselected: (() -> Unit)? = null, onReselectedDoubleClick: (() -> Unit)? = null, reselectedDoubleClickLabel: String? = null) {
     require(items.isNotEmpty() && selectedIndex in items.indices)
     val base = remember { Feedback() }
     val indicator=rememberFeedback(remember { MutableInteractionSource() },!folder,true)
@@ -77,7 +82,16 @@ public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int
                             clipRect(bottom=top+(22*folderScale).dp.toPx()) { drawPath(lip,Brush.verticalGradient(listOf(Color.White.copy(alpha=.12f),Color.Transparent),startY=top,endY=top+(22*folderScale).dp.toPx()),style=Stroke((2*folderScale).dp.toPx())) }
                         }
                     }
-                }.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) }
+                }.then(if (selected && (onReselected != null || onReselectedDoubleClick != null)) {
+                    Modifier.focusProperties { canFocus = false }
+                        .semantics {
+                            if (onReselectedDoubleClick != null && reselectedDoubleClickLabel != null) {
+                                customActions = listOf(CustomAccessibilityAction(reselectedDoubleClickLabel) { onReselectedDoubleClick(); true })
+                            }
+                        }
+                        .combinedClickable(source, indication = null, role = Role.Tab,
+                            onDoubleClick = onReselectedDoubleClick, onClick = { onReselected?.invoke() })
+                } else Modifier.pointerClick(true,source,Role.Tab) { if(!selected)onSelected(index) })
                 .then(if(folder)Modifier else Modifier.drawWithCache {
                     val ink=Paint().apply { colorFilter=ColorFilter.tint(Color.Black) }
                     onDrawWithContent {

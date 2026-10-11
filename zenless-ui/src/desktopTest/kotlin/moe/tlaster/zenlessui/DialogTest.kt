@@ -24,6 +24,41 @@ import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
 class DialogTest {
+    @Test fun exitCompletionUsesLatestCallbackAndIgnoresHiddenOrInterruptedExits() = runDesktopComposeUiTest(width = 1100, height = 800) {
+        mainClock.autoAdvance = false
+        var visible by mutableStateOf(false)
+        var revision by mutableIntStateOf(1)
+        val completions = mutableListOf<Int>()
+        var dismissals = 0
+        setContent { ZenlessTheme { ZenlessOverlayHost {
+            val current = revision
+            ZenlessDialog(visible, "Lifecycle", "Close", { dismissals++; visible = false },
+                onExitFinished = { completions += current }) { ZenlessText("Body") }
+        } } }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { assertTrue(completions.isEmpty()); visible = true }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { visible = false }
+        mainClock.advanceTimeBy(80)
+        runOnIdle { assertTrue(completions.isEmpty()); visible = true }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { assertTrue(completions.isEmpty()); visible = false }
+        mainClock.advanceTimeBy(80)
+        runOnIdle { assertTrue(completions.isEmpty()); revision = 2 }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { assertEquals(listOf(2), completions); assertEquals(0, dismissals) }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { assertEquals(listOf(2), completions); visible = true }
+        mainClock.advanceTimeBy(350)
+        onNodeWithContentDescription("Close").performClick()
+        mainClock.advanceTimeBy(80)
+        runOnIdle { assertEquals(listOf(2), completions); assertEquals(0, dismissals) }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { assertEquals(listOf(2, 2), completions); assertEquals(1, dismissals) }
+        mainClock.advanceTimeBy(350)
+        runOnIdle { assertEquals(listOf(2, 2), completions) }
+    }
+
     @Test fun outerRimSurroundsWindowDuringBothFades() = runDesktopComposeUiTest(width = 1100, height = 800) {
         mainClock.autoAdvance = false
         var visible by mutableStateOf(true)

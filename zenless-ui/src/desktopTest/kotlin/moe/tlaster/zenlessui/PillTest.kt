@@ -29,6 +29,27 @@ import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
 class PillTest {
+    @Test fun customPaddingKeepsLogicalInsetsAcrossPresetsAndRtl() {
+        for (density in listOf(1f, 2f)) runDesktopComposeUiTest(width = 800, height = 400) {
+            var size by mutableStateOf(ZenlessSize.Default)
+            var direction by mutableStateOf(LayoutDirection.Ltr)
+            setContent { CompositionLocalProvider(LocalDensity provides Density(density), LocalLayoutDirection provides direction) { ZenlessTheme {
+                ZenlessPillContainer(Modifier.testTag("pill"), size = size,
+                    contentPadding = PaddingValues(start = 13.dp, top = 7.dp, end = 29.dp, bottom = 11.dp)) {
+                    Spacer(Modifier.size(60.dp, 80.dp).testTag("content"))
+                }
+            } } }
+            for (preset in ZenlessSize.entries) for (rtl in listOf(false, true)) {
+                runOnIdle { size = preset; direction = if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr }
+                onNodeWithTag("pill").assertWidthIsEqualTo(102.dp).assertHeightIsEqualTo(98.dp)
+                val shell = onNodeWithTag("pill").fetchSemanticsNode().boundsInRoot
+                val content = onNodeWithTag("content", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+                assertEquals((if (rtl) 29f else 13f) * density, content.left - shell.left, .01f)
+                assertEquals(7f * density, content.top - shell.top, .01f)
+            }
+        }
+    }
+
     @Test fun pressSelectionFocusAndDisableShareOnlyTheColorCycle() = runDesktopComposeUiTest(width = 660, height = 180) {
         mainClock.autoAdvance = false
         val requester = FocusRequester()
