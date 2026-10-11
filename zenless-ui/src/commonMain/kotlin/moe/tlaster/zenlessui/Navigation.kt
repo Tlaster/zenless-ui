@@ -26,17 +26,21 @@ import androidx.compose.ui.unit.sp
 /** Non-folder tabs have circular outer ends; [expand] = false keeps only their color pulse. Ignored by folder tabs.
  * Optional reselection callbacks handle the current tab without selecting it again; double clicks do not also single-click.
  * Supply [reselectedDoubleClickLabel] to expose the double-click callback as an accessibility action.
+ * [indicatorPosition] is a continuous logical tab index for non-folder pager motion; null keeps the selection animation.
  */
 @Composable
 public fun ZenlessTabs(items: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier, folder: Boolean = false, expand: Boolean = true, size: ZenlessSize = LocalControlSize.current,
-    onReselected: (() -> Unit)? = null, onReselectedDoubleClick: (() -> Unit)? = null, reselectedDoubleClickLabel: String? = null) {
+    onReselected: (() -> Unit)? = null, onReselectedDoubleClick: (() -> Unit)? = null, reselectedDoubleClickLabel: String? = null,
+    indicatorPosition: Float? = null) {
     require(items.isNotEmpty() && selectedIndex in items.indices)
+    require(indicatorPosition == null || indicatorPosition.isFinite())
     val base = remember { Feedback() }
     val indicator=rememberFeedback(remember { MutableInteractionSource() },!folder,true)
     val rtl=LocalLayoutDirection.current==LayoutDirection.Rtl
-    val position by key(items.size,folder,rtl) {
+    val animatedPosition by key(items.size,folder,rtl) {
         animateFloatAsState((if(rtl)items.lastIndex-selectedIndex else selectedIndex).toFloat(),tween(280,easing=CubicBezierEasing(.22f,1f,.36f,1f)))
     }
+    val position = indicatorPosition?.coerceIn(0f, items.lastIndex.toFloat())?.let { if (rtl) items.lastIndex - it else it } ?: animatedPosition
     val folderScale=size.height/84f
     val outlineWidth=with(LocalDensity.current) { (4*folderScale).dp.toPx() }
     Row(modifier.then(if (!folder) Modifier.plate(base).drawWithCache {

@@ -27,6 +27,27 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class TabsTest {
+    @Test fun externalPagerPositionTracksImmediatelyAndClampsInBothDirections() {
+        for (direction in listOf(LayoutDirection.Ltr, LayoutDirection.Rtl)) runDesktopComposeUiTest(width = 400, height = 100) {
+            mainClock.autoAdvance = false
+            var position by mutableFloatStateOf(0f)
+            setContent { CompositionLocalProvider(LocalDensity provides Density(1f), LocalLayoutDirection provides direction) { ZenlessTheme {
+                ZenlessTabs(listOf("", "", ""), 0, {}, Modifier.width(360.dp).testTag("pager-tabs"),
+                    expand = false, indicatorPosition = position)
+            } } }
+            mainClock.advanceTimeBy(320); waitForIdle()
+            for (value in listOf(.25f, 1.5f, .75f, -1f, 4f)) {
+                runOnIdle { position = value }
+                mainClock.advanceTimeByFrame(); waitForIdle()
+                val pixels = onNodeWithTag("pager-tabs").captureToImage().toPixelMap()
+                val ink = pixels.inkAt(pixels.height / 2)
+                val logical = value.coerceIn(0f, 2f)
+                val visual = if (direction == LayoutDirection.Rtl) 2f - logical else logical
+                assertEquals(60f + 120f * visual, (ink.first() + ink.last() + 1) / 2f, absoluteTolerance = 1f)
+            }
+        }
+    }
+
     @Test fun selectedTabDistinguishesGesturesAndExposesAccessibilityActions() {
         for (folder in listOf(false, true)) runDesktopComposeUiTest(width = 400, height = 160) {
             mainClock.autoAdvance = false
